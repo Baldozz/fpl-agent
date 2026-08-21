@@ -29,7 +29,7 @@ for account automation (which needs their credentials and carries account risk).
 | `model.py` | `Player` dataclass + `score_players()` — expected points from form/fixtures/team-strength/start-probability. |
 | `optimizer.py` | ILP (PuLP/CBC): maximise XI points, minimise bench cost; greedy fallback; XI/captain/bench. |
 | `news.py` | Free Premier League RSS feeds → headlines relevant to the squad / injuries. |
-| `grok.py` | xAI Grok over X/Twitter → start-probability signals (optional; needs `XAI_API_KEY` + credits). |
+| `grok.py` | xAI **Responses API** (`/v1/responses`) with server-side `x_search` → live-X start-probability signals + headlines. Optional; needs `XAI_API_KEY` + credits. NB: the old chat-completions `search_parameters` live-search is deprecated (410); `_extract_message` reads the `output[]` item whose `type=="message"`. |
 | `overrides.py` + `overrides.json` | Human/Grok start-probability overrides the FPL API lacks. |
 | `report.py` / `html_report.py` | Markdown report / standalone HTML page (GitHub Pages). |
 | `notify.py` | Free WhatsApp deadline reminder via CallMeBot. |
@@ -37,17 +37,29 @@ for account automation (which needs their credentials and carries account risk).
 
 ## The optimisation philosophy (important)
 
-You score the **starting XI (11), not the squad (15)** each week. So the ILP:
-1. maximises XI projected points (dominant term);
-2. **minimises bench cost** — the four bench slots (1 GK + 3 outfield) should be
-   as cheap as possible so budget concentrates in the XI. This is the
-   points-per-million effect: freed money upgrades the XI, so a £7m pick that
-   scores like a £5m pick loses to the £5m pick;
-3. keeps bench players playable (small `start_prob` reward) so they're real
-   injury/rotation cover.
-Weights in `optimize_ilp` are tiny vs XI points, so (2)/(3) only break ties
-between XI-optimal squads — never sacrifice XI points. If you change them, keep
-that ordering.
+You score the **starting XI (11), not the squad (15)** each week. The ILP
+objective (`optimize_ilp`) is: XI projected points, plus an attacking-ceiling
+bonus for started forwards (`ATTACK_CEILING`), plus a strong reward for bench
+players who will actually PLAY (`cover = max(0, start_prob-0.5)`), minus a tiny
+bench-cost term.
+
+Why this shape (all from the user's FPL strategy):
+- **Bench must be cheap AND playing.** Cheap *playing* cover exists for
+  defenders (£4.0-4.5m starters at weaker clubs) and the reserve keeper (your #1
+  is nailed so the bench GK never plays — £4.0m is correct). But a £4.5m
+  midfielder/forward never starts — dead cover. So rewarding real cover pushes
+  the bench toward cheap playing defenders/mids.
+- That in turn favours an **attacking XI** (more forwards started = more
+  goal-scorers), since you don't want to carry your 3 required forwards as
+  non-playing bench fodder. `ATTACK_CEILING` (default 1.0) tips genuine near-ties
+  to a 3-forward shape (4-3-3 / 3-4-3); raise it for more attack, set 0 for pure
+  mean-points.
+- **Points-per-million**: freed money upgrades the XI (`Player.value`).
+
+**Critical wiring:** `optimize_ilp` returns BOTH the squad and the XI (from the
+`s` starter variables). `build_squad` must use that XI — do NOT re-pick the XI
+by raw points afterwards, or the cover/attacking logic (and thus the formation)
+is silently discarded. `_pick_xi` is only for the greedy fallback.
 
 ## Predicting starts (the crux of FPL)
 

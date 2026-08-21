@@ -7,6 +7,7 @@ gameweek(s). Designed to degrade gracefully at the season opener (when live
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 POS_NAME = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
@@ -123,17 +124,41 @@ def build_players(bootstrap: dict) -> dict[int, Player]:
     return players
 
 
+def _match_players(players: dict[int, Player], name: str) -> list[Player]:
+    """Map a signal name (e.g. Grok's 'Bukayo Saka') to FPL players.
+
+    FPL uses short web_names ('Saka', 'B.Fernandes'). We try, in order: exact
+    web_name, surname (last token) equals web_name, and web_name contained in
+    the signal name (or vice versa). Ambiguous multi-hits are all updated.
+    """
+    n = name.lower().strip()
+    if not n:
+        return []
+    exact = [p for p in players.values() if p.name.lower() == n]
+    if exact:
+        return exact
+    surname = n.split()[-1]
+    by_surname = [p for p in players.values() if p.name.lower() == surname]
+    if by_surname:
+        return by_surname
+    # web_name is a fragment of the full name, e.g. 'B.Fernandes' vs
+    # 'Bruno Fernandes': compare on alphabetic surname tokens.
+    def surtok(s: str) -> str:
+        return re.sub(r"[^a-z]", "", s.lower().split()[-1] if s else "")
+    st = surtok(name)
+    frag = [p for p in players.values()
+            if st and (surtok(p.name) == st or st in p.name.lower())]
+    return frag
+
+
 def apply_start_signals(players: dict[int, Player],
                         signals: dict[str, dict]) -> None:
-    """Apply human/Grok start-probability overrides, matched by web_name."""
-    by_name: dict[str, list[Player]] = {}
-    for p in players.values():
-        by_name.setdefault(p.name.lower(), []).append(p)
+    """Apply human/Grok start-probability overrides with flexible name matching."""
     for name, sig in signals.items():
-        for p in by_name.get(str(name).lower(), []):
-            sp = sig.get("start_prob")
-            if sp is None:
-                continue
+        sp = sig.get("start_prob")
+        if sp is None:
+            continue
+        for p in _match_players(players, name):
             p.start_prob = max(0.0, min(1.0, float(sp)))
             p.override_reason = sig.get("reason", "")
 

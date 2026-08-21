@@ -1,15 +1,20 @@
-"""xAI Grok integration — Premier League insight sourced from X/Twitter.
+"""xAI Grok integration — Premier League insight sourced from live X/Twitter.
 
-Most breaking FPL-relevant news (predicted line-ups, late fitness tests,
-rotation calls, "he trained today") surfaces on X before anywhere else. Grok has
-live access to X, so we ask it — with Live Search enabled over X — to return
-structured start-probability signals and a few headlines for the upcoming
-gameweek.
+Most FPL-relevant news (predicted line-ups, late fitness tests, rotation calls,
+"he trained today") breaks on X before anywhere else. Grok's **Responses API**
+exposes a server-side ``x_search`` tool that reads live X posts, so we ask Grok
+to return structured start-probability signals plus a few headlines for the
+upcoming gameweek, grounded in the last few days of X.
 
 The API key is read from the ``XAI_API_KEY`` environment variable and is NEVER
-committed to the repo. If the key is missing or the team has no credits, every
-function degrades to a no-op so the rest of the agent keeps working on the free
-FPL API + RSS feeds.
+committed. If the key is missing / has no credits, or the API errors, every
+function degrades to a no-op so the agent keeps working on the FPL API + RSS +
+the hand-editable ``overrides.json``.
+
+Endpoint: POST https://api.x.ai/v1/responses
+  { "model", "input": [{role,content}...], "tools": [{"type":"x_search"},
+    {"type":"web_search"}] }
+The final text is the ``output`` item whose ``type == "message"``.
 """
 from __future__ import annotations
 
@@ -19,8 +24,14 @@ import re
 
 import requests
 
-API_URL = "https://api.x.ai/v1/chat/completions"
+API_URL = "https://api.x.ai/v1/responses"
 MODEL = os.environ.get("XAI_MODEL", "grok-4-latest")
+
+SYSTEM = (
+    "You are a Premier League Fantasy (FPL) analyst. Ground every answer in the "
+    "most recent team news you can find on X/Twitter (beat reporters, official "
+    "club accounts, reliable ITKs) and the web. Be precise, current, and output "
+    "ONLY what is asked — no preamble.")
 
 
 class GrokUnavailable(Exception):
@@ -36,60 +47,48 @@ def available() -> bool:
     return _key() is not None
 
 
-def _call(prompt: str, use_live_search: bool = True,
-          max_tokens: int = 2000) -> str:
+def _call(prompt: str, use_tools: bool = True, max_tokens: int = 4000) -> str:
     key = _key()
     if not key:
         raise GrokUnavailable("XAI_API_KEY not set")
     payload: dict = {
         "model": MODEL,
-        "messages": [
-            {"role": "system", "content":
-                "You are a Premier League Fantasy (FPL) analyst. Base answers on "
-                "the most recent team news from X/Twitter (beat reporters, "
-                "official club accounts, reliable ITKs). Be precise and only "
-                "output what is asked."},
+        "input": [
+            {"role": "system", "content": SYSTEM},
             {"role": "user", "content": prompt},
         ],
-        "temperature": 0.2,
-        "max_tokens": max_tokens,
+        "max_output_tokens": max_tokens,
     }
-    if use_live_search:
-        # xAI Live Search — restrict to X so we get Twitter-sourced insight.
-        # NOTE: xAI deprecated this parameter (HTTP 410) in favour of the Agent
-        # Tools API. We still send it (in case it's re-enabled / for newer keys)
-        # and transparently retry without it on a 410 so the call still works
-        # off Grok's own knowledge. For true live-X grounding, upgrade this to
-        # the Agent Tools API once the key has credits — see module docstring.
-        payload["search_parameters"] = {
-            "mode": "auto",
-            "sources": [{"type": "x"}, {"type": "news"}],
-            "max_search_results": 20,
-        }
-
-    def _post(body: dict):
-        try:
-            return requests.post(API_URL, headers={
-                "Authorization": f"Bearer {key}",
-                "Content-Type": "application/json",
-            }, json=body, timeout=90)
-        except requests.RequestException as e:
-            raise GrokUnavailable(f"transport error: {e}") from e
-
-    r = _post(payload)
-    if r.status_code == 410 and "search_parameters" in payload:
-        # Live search retired — fall back to a plain completion.
-        payload.pop("search_parameters", None)
-        r = _post(payload)
+    if use_tools:
+        payload["tools"] = [{"type": "x_search"}, {"type": "web_search"}]
+    try:
+        r = requests.post(API_URL, headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        }, json=payload, timeout=180)
+    except requests.RequestException as e:
+        raise GrokUnavailable(f"transport error: {e}") from e
     if r.status_code != 200:
-        # Common cases: 403 permission-denied (no credits), 401 (bad key).
         raise GrokUnavailable(f"HTTP {r.status_code}: {r.text[:200]}")
     data = r.json()
-    return data["choices"][0]["message"]["content"]
+    return _extract_message(data)
+
+
+def _extract_message(data: dict) -> str:
+    """Concatenate text from the final assistant 'message' item(s)."""
+    parts: list[str] = []
+    for item in data.get("output", []):
+        if item.get("type") == "message":
+            for c in item.get("content", []):
+                t = c.get("text")
+                if t:
+                    parts.append(t)
+    if not parts:
+        raise GrokUnavailable("no message text in Grok response")
+    return "\n".join(parts)
 
 
 def _extract_json(text: str):
-    """Pull the first JSON object/array out of a model response."""
     fence = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
     if fence:
         text = fence.group(1)
@@ -99,61 +98,68 @@ def _extract_json(text: str):
     return json.loads(m.group(0))
 
 
-def player_signals(team_names: list[str], gw: int) -> dict[str, dict]:
-    """Ask Grok for start-probability signals for the upcoming gameweek.
+def _parse_prob(v) -> float | None:
+    """Accept 0..1 floats, 0..100 numbers, or strings like '40%'/'0.4'."""
+    if v is None:
+        return None
+    if isinstance(v, (int, float)):
+        x = float(v)
+    else:
+        s = str(v).strip().replace("%", "").strip()
+        try:
+            x = float(s)
+        except ValueError:
+            return None
+    if x > 1.5:            # a percentage like 40 or 40%
+        x /= 100.0
+    return max(0.0, min(1.0, x))
 
-    Returns {web_name: {"start_prob": float, "reason": str}}. Empty on failure.
+
+def analyse(team_names: list[str], gw: int) -> tuple[dict[str, dict], list[dict]]:
+    """One combined X-grounded query → (start_prob signals, headline bullets).
+
+    signals: {name: {"start_prob", "reason", "source"}}  (name as Grok gives it)
+    headlines: [{"title", "detail"}]
+    Returns ({}, []) on any failure.
     """
     prompt = (
-        f"Premier League Gameweek {gw} is about to start. Using the latest team "
-        f"news from X/Twitter, list players who are OUT, DOUBTFUL, a ROTATION "
-        f"RISK (e.g. back late from World Cup duty, heavily rotated, or a "
-        f"cup/travel situation), or newly NAILED-ON starters. Focus on "
-        f"fantasy-relevant players across these clubs: {', '.join(team_names)}. "
-        "Return ONLY a JSON array, each item: "
-        '{"name": "<surname as on FPL>", "start_prob": <0..1>, '
-        '"reason": "<short, cite the gist>"}. '
+        f"Premier League Gameweek {gw} is imminent. Using the LATEST team news "
+        f"from X/Twitter (last ~4 days), assess these clubs: "
+        f"{', '.join(team_names)}.\n\n"
+        "Return ONLY a JSON object with two keys:\n"
+        '1. "players": array of players who are OUT, DOUBTFUL, a ROTATION RISK '
+        "(e.g. back late from World Cup duty, heavily rotated, cup/travel), or a "
+        "newly NAILED-ON starter. Each item: "
+        '{"name":"<player surname/common name>", "start_prob":<0..1 decimal>, '
+        '"reason":"<short, cite the gist>"}. '
         "start_prob: 0=won't play, 0.3=major doubt, 0.5=50/50 rotation, "
-        "0.8=likely starts, 1=nailed. Keep to at most 40 of the most relevant."
+        "0.8=likely, 1=nailed. Up to 40 of the most fantasy-relevant.\n"
+        '2. "headlines": array (max 8) of {"title":"<one line>", '
+        '"detail":"<=140 chars"} of the most important GW team-news items.\n'
+        "Use decimals not percentages for start_prob."
     )
     try:
         raw = _call(prompt)
-        arr = _extract_json(raw)
+        obj = _extract_json(raw)
     except (GrokUnavailable, ValueError, KeyError) as e:
-        print(f"[grok] player signals unavailable: {e}")
-        return {}
-    out: dict[str, dict] = {}
-    for item in arr if isinstance(arr, list) else []:
+        print(f"[grok] unavailable, falling back to overrides + RSS: {e}")
+        return {}, []
+
+    signals: dict[str, dict] = {}
+    for item in obj.get("players", []) if isinstance(obj, dict) else []:
         name = str(item.get("name", "")).strip()
-        if not name:
+        sp = _parse_prob(item.get("start_prob"))
+        if not name or sp is None:
             continue
-        try:
-            sp = float(item.get("start_prob"))
-        except (TypeError, ValueError):
-            continue
-        out[name] = {"start_prob": max(0.0, min(1.0, sp)),
-                     "reason": str(item.get("reason", ""))[:160],
-                     "source": "grok/x"}
-    print(f"[grok] received {len(out)} player signals")
-    return out
-
-
-def headlines(gw: int, limit: int = 8) -> list[dict]:
-    """A few X-sourced headline bullets for the report. Empty on failure."""
-    prompt = (
-        f"Give the {limit} most important Premier League team-news items for "
-        f"Gameweek {gw} from X/Twitter in the last 48h (injuries, predicted "
-        "line-ups, rotation). Return ONLY a JSON array of "
-        '{"title": "<one line>", "detail": "<=140 chars"}.')
-    try:
-        raw = _call(prompt)
-        arr = _extract_json(raw)
-    except (GrokUnavailable, ValueError, KeyError) as e:
-        print(f"[grok] headlines unavailable: {e}")
-        return []
-    items = []
-    for it in (arr if isinstance(arr, list) else [])[:limit]:
+        signals[name] = {"start_prob": sp,
+                         "reason": str(item.get("reason", ""))[:160],
+                         "source": "grok/x"}
+    headlines = []
+    for it in (obj.get("headlines", []) if isinstance(obj, dict) else [])[:8]:
         t = str(it.get("title", "")).strip()
         if t:
-            items.append({"title": t, "detail": str(it.get("detail", ""))[:160]})
-    return items
+            headlines.append({"title": t,
+                              "detail": str(it.get("detail", ""))[:160]})
+    print(f"[grok] {len(signals)} start-prob signals, "
+          f"{len(headlines)} headlines from live X search")
+    return signals, headlines

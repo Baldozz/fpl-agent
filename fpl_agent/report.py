@@ -75,20 +75,21 @@ def render(squad: Squad, gw: int, deadline: str, season_started: bool,
 
     lines.append("## How this XI was chosen")
     lines.append("")
-    lines.append("- Integer linear programming maximises the projected points of "
-                 "the **starting XI** (not all 15) within £100.0m, the 2/5/5/3 "
-                 "quota and max-3-per-club — then **minimises bench cost** so "
-                 "spare budget is concentrated in the XI (the points-per-million "
-                 "effect: an overpriced pick is swapped for a cheaper equal one "
-                 "and the saving upgrades the XI).")
+    lines.append("- Integer linear programming maximises the **starting XI**'s "
+                 "projected points (not all 15) within £100.0m, the 2/5/5/3 "
+                 "quota and max-3-per-club.")
     lines.append("- Each projection blends FPL's `ep_next`, last-season "
                  "points-per-game and live form, then scales by **fixture "
                  "difficulty**, **own-team strength** (clean-sheet / attack "
                  "prior) and **probability of actually starting** — a "
-                 "minutes/starts model, overridden by injury news and "
-                 "human/Grok (X) signals in `overrides.json`.")
-    lines.append("- Bench = cheapest viable cover that can still come on; "
-                 "`Pts/£m` shows each pick's value.")
+                 "minutes/starts model overridden by injury news and human/Grok "
+                 "(X/Twitter) signals in `overrides.json`.")
+    lines.append("- **Bench = cheapest cover that will actually play.** Cheap "
+                 "playing options exist for defenders and the reserve keeper, "
+                 "but a £4.5m forward never starts — so the model prefers an "
+                 "attacking shape (more forwards in the XI = more goal-scorers) "
+                 "with a bench of cheap *playing* defenders/mids. Money is "
+                 "concentrated in the XI (`Pts/£m` shows each pick's value).")
     lines.append("- Captain = highest projected starter; vice = second highest.")
     lines.append("")
 

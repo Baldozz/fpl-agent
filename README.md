@@ -30,11 +30,18 @@ Markdown report for every gameweek into [`reports/`](reports/).
     because the game is about picking players who *play*. This is overridden by
     injury news and by human/Grok signals (see below).
 - **Optimises for the XI, not the 15.** Integer linear programming (PuLP/CBC)
-  maximises the **starting XI's** projected points, then **minimises bench cost**
-  so spare budget concentrates in the XI — the points-per-million effect: an
-  overpriced pick is swapped for a cheaper equal-scorer and the saving upgrades
-  the XI. Bench = cheapest viable cover that can still come on. Greedy fallback
-  if no solver is installed.
+  maximises the **starting XI's** projected points. It then shapes the squad the
+  way good managers do:
+  - **Bench = cheapest cover that will actually play.** A £4.0m reserve keeper
+    (your #1 is nailed, so he never plays) and cheap *playing* defenders make
+    real cover; a £4.5m forward never starts, so it's dead money.
+  - Because cheap *playing* cover exists for defenders but not forwards, the
+    model favours an **attacking shape** (more forwards in the XI = more
+    goal-scorers) with a bench of cheap playing defenders/mids — tunable via
+    `ATTACK_CEILING` in `optimizer.py`.
+  - **Points-per-million:** an overpriced pick is swapped for a cheaper
+    equal-scorer and the saving upgrades the XI (`Pts/£m` shown per player).
+  - Greedy fallback if no solver is installed.
 - **Recommends captain (2×), vice-captain and bench order.**
 - **Pulls free football news** (BBC Sport, The Guardian, Sky Sports RSS) and
   surfaces headlines relevant to your squad or general injury/team-news.
@@ -88,12 +95,14 @@ mechanisms handle this:
    matched by player name. `start_prob`: `0` = won't play, `0.5` = rotation
    risk / 50-50, `1` = nailed. Example already in the file: Mukiele ruled out,
    Guéhi flagged as a World-Cup-return rotation risk.
-2. **Grok (xAI) over X/Twitter** — most team news breaks on X first. With an
-   `XAI_API_KEY` that has credits, the agent asks Grok for predicted line-ups /
-   rotation / injuries and merges those signals on top of the file automatically.
-   Set the key via a **gitignored `.env`** or the `XAI_API_KEY` env var — it is
-   **never committed**. Without credits the agent falls back to `overrides.json`
-   + the free RSS feeds, so it always runs.
+2. **Grok (xAI) over live X/Twitter** — most team news breaks on X first. With an
+   `XAI_API_KEY` that has credits, the agent calls xAI's **Responses API** with
+   the server-side **`x_search`** tool, so Grok reads *live* X posts (last few
+   days) for predicted line-ups / rotation / injuries and returns
+   start-probability signals + headlines, merged on top of the file
+   automatically. Set the key via a **gitignored `.env`** or the `XAI_API_KEY`
+   env var — it is **never committed**. Without credits the agent falls back to
+   `overrides.json` + the free RSS feeds, so it always runs.
 
 ```bash
 echo 'XAI_API_KEY=xai-...' >> .env      # gitignored; or export XAI_API_KEY=...

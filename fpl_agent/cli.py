@@ -76,11 +76,10 @@ def main(argv: list[str] | None = None) -> int:
     grok_bullets: list[dict] = []
     if not args.no_grok and grok.available():
         team_names = [t["name"] for t in boot["teams"]]
-        gsig = grok.player_signals(team_names, gw)
+        gsig, grok_bullets = grok.analyse(team_names, gw)
         if gsig:
             signals = merge(signals, gsig)
             grok_used = True
-        grok_bullets = grok.headlines(gw)
     model.apply_start_signals(players, signals)
 
     model.score_players(players, season_started)
