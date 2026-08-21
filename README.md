@@ -24,10 +24,17 @@ Markdown report for every gameweek into [`reports/`](reports/).
   - Last-season **points-per-game** and total points
   - **Live form** (weighted in progressively once the season is under way)
   - **Fixture difficulty** over a configurable horizon (double-gameweek aware)
-  - **Availability**: injuries / suspensions / "% chance of playing"
-- **Optimises the squad** with integer linear programming (PuLP/CBC), so the
-  chosen XI is provably the highest-projected legal team for the budget. Falls
-  back to a greedy heuristic if no solver is installed.
+  - **Own-team strength** — an Arsenal defender keeps more clean sheets than a
+    promoted-side defender, so team quality boosts CS (GK/DEF) and attack (MID/FWD)
+  - **Probability of actually starting** — a last-season minutes/starts model,
+    because the game is about picking players who *play*. This is overridden by
+    injury news and by human/Grok signals (see below).
+- **Optimises for the XI, not the 15.** Integer linear programming (PuLP/CBC)
+  maximises the **starting XI's** projected points, then **minimises bench cost**
+  so spare budget concentrates in the XI — the points-per-million effect: an
+  overpriced pick is swapped for a cheaper equal-scorer and the saving upgrades
+  the XI. Bench = cheapest viable cover that can still come on. Greedy fallback
+  if no solver is installed.
 - **Recommends captain (2×), vice-captain and bench order.**
 - **Pulls free football news** (BBC Sport, The Guardian, Sky Sports RSS) and
   surfaces headlines relevant to your squad or general injury/team-news.
@@ -70,13 +77,39 @@ The Action already calls this each run; it silently no-ops until the secrets are
 set. Prefer a calendar alarm instead? The deadline is in every report and on the
 page's live countdown.
 
-## Data sources (all free, no API keys)
+## Predicting who actually starts
+
+The hardest, most valuable part of FPL is knowing **who will play** — and the
+API doesn't always know (a knock the club hasn't announced, a player back late
+from a deep World Cup run who'll be rotated, a nailed-on new signing). Two
+mechanisms handle this:
+
+1. **`overrides.json`** — a human-editable file of start-probability signals,
+   matched by player name. `start_prob`: `0` = won't play, `0.5` = rotation
+   risk / 50-50, `1` = nailed. Example already in the file: Mukiele ruled out,
+   Guéhi flagged as a World-Cup-return rotation risk.
+2. **Grok (xAI) over X/Twitter** — most team news breaks on X first. With an
+   `XAI_API_KEY` that has credits, the agent asks Grok for predicted line-ups /
+   rotation / injuries and merges those signals on top of the file automatically.
+   Set the key via a **gitignored `.env`** or the `XAI_API_KEY` env var — it is
+   **never committed**. Without credits the agent falls back to `overrides.json`
+   + the free RSS feeds, so it always runs.
+
+```bash
+echo 'XAI_API_KEY=xai-...' >> .env      # gitignored; or export XAI_API_KEY=...
+python3 -m fpl_agent                     # Grok used automatically when available
+python3 -m fpl_agent --no-grok           # force-skip Grok
+```
+
+## Data sources (all free)
 
 | Source | Used for |
 |--------|----------|
-| `fantasy.premierleague.com/api/bootstrap-static/` | players, prices, form, availability |
+| `fantasy.premierleague.com/api/bootstrap-static/` | players, prices, form, minutes/starts, team strength, availability |
 | `fantasy.premierleague.com/api/fixtures/` | fixtures & fixture difficulty (FDR) |
-| BBC Sport / Guardian / Sky Sports RSS | injuries, team news, predicted line-ups |
+| BBC Sport / Guardian (Premier League) RSS | injuries, team news, predicted line-ups |
+| xAI Grok live search over X/Twitter *(optional, needs credits)* | predicted line-ups, rotation, breaking injuries |
+| `overrides.json` | human/Grok start-probability signals the API lacks |
 
 ## Install
 
@@ -118,13 +151,20 @@ This can be automated with a scheduler (cron / GitHub Actions) — see
 ```
 fpl_agent/
   api.py         # free FPL API client (+ on-disk cache)
-  model.py       # per-player expected-points model
-  optimizer.py   # ILP squad selection + XI / captain / bench
-  news.py        # free RSS feeds -> injury / team-news signals
+  model.py       # per-player expected-points model (form, fixtures, team, minutes)
+  optimizer.py   # ILP: maximise XI points, minimise bench cost
+  news.py        # free Premier League RSS feeds -> team-news signals
+  grok.py        # xAI Grok over X/Twitter -> start-probability signals (optional)
+  overrides.py   # load human/Grok start-prob overrides
   report.py      # Markdown report renderer
+  html_report.py # standalone HTML 'team sheet on a pitch' (GitHub Pages)
+  notify.py      # free WhatsApp deadline reminder (CallMeBot)
   cli.py         # `python -m fpl_agent` entry point
+overrides.json   # human/Grok start-probability signals (committed, editable)
 reports/         # generated per-gameweek recommendations (committed)
+docs/            # generated HTML page served by GitHub Pages (committed)
 data/            # cached API payloads (gitignored)
+.env             # XAI_API_KEY etc. (gitignored, never committed)
 ```
 
 ## How the scoring works (short version)

@@ -10,12 +10,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# Free public RSS feeds. No API keys required.
+# Free public RSS feeds. No API keys required. Kept to Premier-League-focused
+# feeds so we don't pull in boxing / F1 / other sports.
 FEEDS = {
-    "BBC Sport – Football": "https://feeds.bbci.co.uk/sport/football/rss.xml",
-    "BBC Sport – Premier League": "https://feeds.bbci.co.uk/sport/football/premier-league/rss.xml",
+    "BBC Sport – Premier League":
+        "https://feeds.bbci.co.uk/sport/football/premier-league/rss.xml",
+    "The Guardian – Premier League":
+        "https://www.theguardian.com/football/premierleague/rss",
     "The Guardian – Football": "https://www.theguardian.com/football/rss",
-    "Sky Sports – Premier League": "https://www.skysports.com/rss/12040",
 }
 
 INJURY_KEYWORDS = (
@@ -61,14 +63,24 @@ def fetch_headlines(limit_per_feed: int = 15) -> list[Headline]:
     return out
 
 
-def relevant_headlines(headlines: list[Headline],
-                       names: set[str]) -> list[Headline]:
-    """Headlines that mention a squad player OR carry injury/team-news keywords."""
+def relevant_headlines(headlines: list[Headline], names: set[str],
+                       teams: set[str] | None = None) -> list[Headline]:
+    """Headlines relevant to the squad or the Premier League.
+
+    Requires a squad-player name match, OR a Premier-League team mention paired
+    with an injury/team-news keyword. Keyword-only matches are rejected so
+    unrelated sports (boxing, F1, rugby) don't leak in from mixed feeds.
+    """
     lower_names = {n.lower() for n in names if len(n) > 3}
+    lower_teams = {t.lower() for t in (teams or set()) if len(t) > 3}
     hits: list[Headline] = []
+    seen: set[str] = set()
     for h in headlines:
         text = f"{h.title} {h.summary}".lower()
-        if any(n in text for n in lower_names) or \
-           any(k in text for k in INJURY_KEYWORDS):
+        by_name = any(n in text for n in lower_names)
+        by_team = any(t in text for t in lower_teams) and \
+            any(k in text for k in INJURY_KEYWORDS)
+        if (by_name or by_team) and h.title not in seen:
+            seen.add(h.title)
             hits.append(h)
     return hits

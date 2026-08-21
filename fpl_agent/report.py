@@ -15,7 +15,8 @@ def _fmt_player(p: Player, tag: str = "") -> str:
     news = f" ⚠️ {p.news}" if p.news else ""
     star = f" {tag}" if tag else ""
     return (f"| {p.pos_name} | **{p.name}**{star} | {p.team_name} | "
-            f"£{p.cost_m:.1f}m | {p.projected:.2f} |{reasons}{news}".rstrip())
+            f"£{p.cost_m:.1f}m | {p.projected:.2f} | {p.value:.2f} |"
+            f"{reasons}{news}".rstrip())
 
 
 def _xi_by_pos(xi: list[Player]) -> list[Player]:
@@ -56,8 +57,8 @@ def render(squad: Squad, gw: int, deadline: str, season_started: bool,
 
     lines.append("## Starting XI")
     lines.append("")
-    lines.append("| Pos | Player | Team | Price | Proj | Notes |")
-    lines.append("|-----|--------|------|-------|------|-------|")
+    lines.append("| Pos | Player | Team | Price | Proj | Pts/£m | Notes |")
+    lines.append("|-----|--------|------|-------|------|--------|-------|")
     for p in _xi_by_pos(squad.xi):
         tag = "(C)" if p.id == squad.captain.id else \
               "(V)" if p.id == squad.vice.id else ""
@@ -66,20 +67,28 @@ def render(squad: Squad, gw: int, deadline: str, season_started: bool,
 
     lines.append("## Bench (in substitution order)")
     lines.append("")
-    lines.append("| Pos | Player | Team | Price | Proj | Notes |")
-    lines.append("|-----|--------|------|-------|------|-------|")
+    lines.append("| Pos | Player | Team | Price | Proj | Pts/£m | Notes |")
+    lines.append("|-----|--------|------|-------|------|--------|-------|")
     for i, p in enumerate(squad.bench, 1):
         lines.append(_fmt_player(p, f"[{i}]"))
     lines.append("")
 
     lines.append("## How this XI was chosen")
     lines.append("")
-    lines.append("- Squad selected by integer linear programming to maximise "
-                 "projected XI points within the £100.0m budget, 2/5/5/3 quota "
-                 "and max-3-per-club rule.")
-    lines.append("- Each player's projection blends FPL's own `ep_next`, "
-                 "last-season points-per-game, live form (once available), "
-                 "then scales by fixture difficulty and injury/availability.")
+    lines.append("- Integer linear programming maximises the projected points of "
+                 "the **starting XI** (not all 15) within £100.0m, the 2/5/5/3 "
+                 "quota and max-3-per-club — then **minimises bench cost** so "
+                 "spare budget is concentrated in the XI (the points-per-million "
+                 "effect: an overpriced pick is swapped for a cheaper equal one "
+                 "and the saving upgrades the XI).")
+    lines.append("- Each projection blends FPL's `ep_next`, last-season "
+                 "points-per-game and live form, then scales by **fixture "
+                 "difficulty**, **own-team strength** (clean-sheet / attack "
+                 "prior) and **probability of actually starting** — a "
+                 "minutes/starts model, overridden by injury news and "
+                 "human/Grok (X) signals in `overrides.json`.")
+    lines.append("- Bench = cheapest viable cover that can still come on; "
+                 "`Pts/£m` shows each pick's value.")
     lines.append("- Captain = highest projected starter; vice = second highest.")
     lines.append("")
 
@@ -87,7 +96,8 @@ def render(squad: Squad, gw: int, deadline: str, season_started: bool,
         lines.append("## Relevant team news (free RSS sources)")
         lines.append("")
         for h in headlines[:12]:
-            lines.append(f"- [{h.title}]({h.link}) — _{h.source}_")
+            title = f"[{h.title}]({h.link})" if h.link else h.title
+            lines.append(f"- {title} — _{h.source}_")
         lines.append("")
 
     lines.append("## Data sources")

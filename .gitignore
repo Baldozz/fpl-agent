@@ -1,3 +1,7 @@
+# Secrets — never commit API keys
+.env
+*.env
+
 # Cached API payloads (regenerated on every run)
 /data/*.json
 !/data/.gitkeep

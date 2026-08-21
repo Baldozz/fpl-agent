@@ -26,11 +26,45 @@ for account automation (which needs their credentials and carries account risk).
 | File | Responsibility |
 |------|----------------|
 | `api.py` | Fetch `bootstrap-static` and `fixtures` from the public FPL API; 1-hour on-disk cache in `data/`. No auth. |
-| `model.py` | `Player` dataclass + `score_players()` — the expected-points model. |
-| `optimizer.py` | ILP (PuLP/CBC) squad selection with a greedy fallback; XI/captain/bench. |
-| `news.py` | Free RSS feeds → headlines relevant to the squad / injuries. |
-| `report.py` | Render the Markdown gameweek report. |
+| `model.py` | `Player` dataclass + `score_players()` — expected points from form/fixtures/team-strength/start-probability. |
+| `optimizer.py` | ILP (PuLP/CBC): maximise XI points, minimise bench cost; greedy fallback; XI/captain/bench. |
+| `news.py` | Free Premier League RSS feeds → headlines relevant to the squad / injuries. |
+| `grok.py` | xAI Grok over X/Twitter → start-probability signals (optional; needs `XAI_API_KEY` + credits). |
+| `overrides.py` + `overrides.json` | Human/Grok start-probability overrides the FPL API lacks. |
+| `report.py` / `html_report.py` | Markdown report / standalone HTML page (GitHub Pages). |
+| `notify.py` | Free WhatsApp deadline reminder via CallMeBot. |
 | `cli.py` / `__main__.py` | `python -m fpl_agent` entry point. |
+
+## The optimisation philosophy (important)
+
+You score the **starting XI (11), not the squad (15)** each week. So the ILP:
+1. maximises XI projected points (dominant term);
+2. **minimises bench cost** — the four bench slots (1 GK + 3 outfield) should be
+   as cheap as possible so budget concentrates in the XI. This is the
+   points-per-million effect: freed money upgrades the XI, so a £7m pick that
+   scores like a £5m pick loses to the £5m pick;
+3. keeps bench players playable (small `start_prob` reward) so they're real
+   injury/rotation cover.
+Weights in `optimize_ilp` are tiny vs XI points, so (2)/(3) only break ties
+between XI-optimal squads — never sacrifice XI points. If you change them, keep
+that ordering.
+
+## Predicting starts (the crux of FPL)
+
+`Player.start_prob` (0..1) gates a player's projection (an injured/benched
+player scores ~0). It comes from, in order of precedence: a human/Grok override
+in `overrides.json`, else a last-season minutes/starts model
+(`_minutes_security`). Add knowledge the API lacks — unannounced injuries,
+World-Cup-return rotation, nailed new signings — to `overrides.json` (or let
+Grok populate it).
+
+## Secrets
+
+`XAI_API_KEY` (and any secret) lives in a **gitignored `.env`** or the
+environment, and as a GitHub Actions secret for CI. **Never commit keys.**
+`_load_dotenv()` in `cli.py` loads `.env` for local runs. Grok degrades to a
+no-op (overrides + RSS only) when the key is missing or has no credits, or if
+xAI's live-search endpoint is unavailable — keep that graceful fallback.
 
 ## The scoring model (where to tune)
 

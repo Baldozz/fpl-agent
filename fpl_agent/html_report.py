@@ -56,7 +56,7 @@ def _card(p: Player, *, captain=False, vice=False, bench_idx: int | None = None,
         <div class="pname">{_esc(p.name)}</div>
         <div class="pmeta"><span>{_esc(p.team_name)}</span>
           <span class="proj">{p.projected:.1f}</span></div>
-        <div class="pprice">£{p.cost_m:.1f}m</div>
+        <div class="pprice">£{p.cost_m:.1f}m · {p.value:.1f}/£m</div>
         {notes}
       </div>"""
 
@@ -85,9 +85,13 @@ def _news(headlines: list[Headline]) -> str:
                 'feeds right now. Check back closer to kickoff.</p>')
     items = []
     for h in headlines[:10]:
-        items.append(
-            f'<li><a href="{_esc(h.link)}" target="_blank" rel="noopener">'
-            f'{_esc(h.title)}</a><span class="src">{_esc(h.source)}</span></li>')
+        if h.link:
+            title = (f'<a href="{_esc(h.link)}" target="_blank" '
+                     f'rel="noopener">{_esc(h.title)}</a>')
+        else:
+            title = f'<span>{_esc(h.title)}</span>'
+        items.append(f'<li>{title}'
+                     f'<span class="src">{_esc(h.source)}</span></li>')
     return f'<ul class="news">{"".join(items)}</ul>'
 
 

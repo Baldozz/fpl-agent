@@ -86,10 +86,22 @@ def optimize_ilp(players: list[Player]) -> list[Player] | None:
     s = {p.id: pulp.LpVariable(f"s_{p.id}", cat="Binary") for p in avail}  # in XI
     pm = {p.id: p for p in avail}
 
-    # Objective: XI projected points (bench contributes a small weight so ties
-    # among benchable players still favour stronger cover).
-    prob += pulp.lpSum(s[i] * pm[i].projected for i in x) + \
-        0.1 * pulp.lpSum((x[i] - s[i]) * pm[i].projected for i in x)
+    # Objective — what we actually score each week is the STARTING XI, not all 15.
+    # So:
+    #   (1) maximise XI projected points (dominant term);
+    #   (2) penalise BENCH COST, so spare budget is concentrated in the XI and
+    #       any overpriced pick is swapped for a cheaper equal-value one (this is
+    #       the points-per-million effect — freed money upgrades the XI);
+    #   (3) a small reward for bench players who are actually likely to PLAY, so
+    #       the four cheap bench slots are genuine injury/rotation cover.
+    # The weights are tiny relative to XI points, so (2) and (3) only ever pick
+    # between squads that are already XI-optimal — they never sacrifice XI points.
+    bench = {i: (x[i] - s[i]) for i in x}
+    prob += (
+        pulp.lpSum(s[i] * pm[i].projected for i in x)
+        - 0.003 * pulp.lpSum(bench[i] * pm[i].cost for i in x)
+        + 0.05 * pulp.lpSum(bench[i] * pm[i].start_prob for i in x)
+    )
 
     prob += pulp.lpSum(x.values()) == 15
     prob += pulp.lpSum(s.values()) == 11
