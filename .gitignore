@@ -1,0 +1,14 @@
+# Cached API payloads (regenerated on every run)
+/data/*.json
+!/data/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# OS
+.DS_Store
