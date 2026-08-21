@@ -18,10 +18,11 @@ BUDGET = 1000  # £100.0m in tenths
 # Per-started-forward attacking-ceiling bonus (tips near-ties to 3-4-3). Raise
 # for a more attacking bias, lower/zero for a purely mean-points team.
 ATTACK_CEILING = 1.0
-# Hard cap on total bench cost (tenths of £m). Keeps money in the XI and stops
-# the bench buying up to £5.0m+ enablers. £17.5m = the practical floor for a
-# bench that still mostly plays (£4.0m reserve GK + three ~£4.5m starters).
-MAX_BENCH_COST = 175
+# Hard cap on total bench cost (tenths of £m). The absolute rules floor is
+# ~£16.5m: a bench is always 4 players (1 GK + 3 outfield) and the cheapest are
+# £4.0m (GK/DEF) and £4.5m (MID/FWD), so 4.0+4.0+4.0+4.5 = 16.5. At this floor
+# the bench is pure cheap fodder (won't reliably play) — all the money is in XI.
+MAX_BENCH_COST = 165
 # Gentle nudge toward cheaper bench *within* the cap; the cover reward keeps the
 # first subs playable.
 BENCH_COST_WEIGHT = 0.02
@@ -86,18 +87,22 @@ def _order_bench(squad: list[Player], xi: list[Player]) -> list[Player]:
     return gk + out  # bench GK is a separate slot; outfield by likelihood to sub in
 
 
-def optimize_ilp(players: list[Player], formation: tuple[int, int, int] | None = None):
+def optimize_ilp(players: list[Player], formation: tuple[int, int, int] | None = None,
+                 must_include: set[int] | None = None):
     """Return (squad, xi) as lists, or None if no solver / not optimal.
 
     ``formation`` pins the starting XI outfield shape as (DEF, MID, FWD), e.g.
     ``(3, 4, 3)`` for 3-4-3. When None the shape is free within the legal ranges.
+    ``must_include`` is a set of player ids forced into the 15-man squad.
     """
     try:
         import pulp
     except ImportError:
         return None
 
-    avail = [p for p in players if p.projected > 0]
+    must_include = must_include or set()
+    # Forced players must be candidates even if their projection is ~0.
+    avail = [p for p in players if p.projected > 0 or p.id in must_include]
     prob = pulp.LpProblem("fpl_squad", pulp.LpMaximize)
     x = {p.id: pulp.LpVariable(f"x_{p.id}", cat="Binary") for p in avail}
     s = {p.id: pulp.LpVariable(f"s_{p.id}", cat="Binary") for p in avail}  # in XI
@@ -151,6 +156,9 @@ def optimize_ilp(players: list[Player], formation: tuple[int, int, int] | None =
     clubs = {p.team for p in avail}
     for c in clubs:
         prob += pulp.lpSum(x[i] for i in x if pm[i].team == c) <= MAX_PER_CLUB
+    for i in must_include:
+        if i in x:
+            prob += x[i] == 1
 
     prob.solve(pulp.PULP_CBC_CMD(msg=0))
     if pulp.LpStatus[prob.status] != "Optimal":
@@ -185,8 +193,9 @@ def optimize_greedy(players: list[Player]) -> list[Player]:
 
 
 def build_squad(players: list[Player],
-                formation: tuple[int, int, int] | None = DEFAULT_FORMATION) -> Squad:
-    result = optimize_ilp(list(players), formation)
+                formation: tuple[int, int, int] | None = DEFAULT_FORMATION,
+                must_include: set[int] | None = None) -> Squad:
+    result = optimize_ilp(list(players), formation, must_include)
     if result is not None:
         chosen, xi = result       # formation pinned / decided by the ILP
     else:

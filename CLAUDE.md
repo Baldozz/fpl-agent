@@ -53,9 +53,13 @@ Why this shape (all from the user's FPL strategy):
   goal-scorers). The default is a pinned **3-4-3** (`DEFAULT_FORMATION`, overridable
   with `--formation`); when formation is `free`, `ATTACK_CEILING` (1.0) tips
   near-ties to a 3-forward shape.
-- **Bench budget is hard-capped** at `MAX_BENCH_COST` (£17.5m) so it can't buy
-  £5.0m+ enablers — the practical floor for a mostly-playing bench (£4.0m reserve
-  GK + ~£4.5m starters). `BENCH_COST_WEIGHT` gently prefers cheaper within the cap.
+- **Bench budget is hard-capped** at `MAX_BENCH_COST` (£16.5m = the rules floor;
+  4 bench players min £4.0-4.5m each). At the floor the bench is cheap fodder that
+  won't reliably play — that's intended (money in the XI). Raise the cap if you
+  want a mostly-playing bench (~£17.5m). `BENCH_COST_WEIGHT` nudges cheaper within.
+- **Forcing players in:** `must_include` (overrides.json) + `--include` resolve to
+  ids and constrain `x_i == 1` in the ILP; forced players bypass the projected>0
+  candidate filter. Used e.g. to guarantee a template premium like Haaland.
 - **Points-per-million**: freed money upgrades the XI (`Player.value`).
 
 **Critical wiring:** `optimize_ilp` returns BOTH the squad and the XI (from the

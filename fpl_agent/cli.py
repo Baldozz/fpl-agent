@@ -22,7 +22,7 @@ from pathlib import Path
 from . import api, grok, model, news
 from .html_report import render_html
 from .optimizer import build_squad
-from .overrides import load_overrides, merge
+from .overrides import load_must_include, load_overrides, merge
 from .report import render
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -59,6 +59,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--formation", default="3-4-3",
                     help="starting shape DEF-MID-FWD (default 3-4-3), "
                          "or 'free' to let the optimiser choose")
+    ap.add_argument("--include", default="",
+                    help="comma-separated player names to force into the squad "
+                         "(added to must_include in overrides.json)")
     args = ap.parse_args(argv)
 
     boot = api.bootstrap(use_cache=not args.no_cache)
@@ -99,7 +102,22 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError:
             print(f"Invalid --formation '{args.formation}'; using 3-4-3.")
             formation = (3, 4, 3)
-    squad = build_squad(list(players.values()), formation)
+
+    # Force-include players: from overrides.json must_include + --include flag.
+    want_names = load_must_include() + \
+        [n.strip() for n in args.include.split(",") if n.strip()]
+    must_ids: set[int] = set()
+    for nm in want_names:
+        matches = model._match_players(players, nm)
+        if matches:
+            must_ids.add(max(matches, key=lambda p: p.projected).id)
+        else:
+            print(f"[include] no player matched '{nm}' — skipping")
+    if want_names:
+        print(f"[include] forcing into squad: "
+              f"{', '.join(sorted({players[i].name for i in must_ids}))}")
+
+    squad = build_squad(list(players.values()), formation, must_ids)
 
     headlines: list[news.Headline] = []
     if not args.no_news:

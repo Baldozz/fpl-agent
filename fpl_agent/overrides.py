@@ -14,15 +14,23 @@ from pathlib import Path
 OVERRIDES_PATH = Path(__file__).resolve().parent.parent / "overrides.json"
 
 
-def load_overrides() -> dict[str, dict]:
-    """Return {web_name: {"start_prob": float, "reason": str}}."""
+def _load() -> dict:
     if not OVERRIDES_PATH.exists():
         return {}
     try:
-        data = json.loads(OVERRIDES_PATH.read_text())
+        return json.loads(OVERRIDES_PATH.read_text())
     except json.JSONDecodeError:
         return {}
-    return data.get("players", {})
+
+
+def load_overrides() -> dict[str, dict]:
+    """Return {web_name: {"start_prob": float, "reason": str}}."""
+    return _load().get("players", {})
+
+
+def load_must_include() -> list[str]:
+    """Names of players to force into the squad (e.g. a template premium)."""
+    return list(_load().get("must_include", []))
 
 
 def merge(base: dict[str, dict], extra: dict[str, dict]) -> dict[str, dict]:

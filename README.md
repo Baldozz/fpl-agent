@@ -39,9 +39,12 @@ Markdown report for every gameweek into [`reports/`](reports/).
     with a bench of cheap playing defenders/mids. Change it with
     `--formation 4-3-3` (or `free` to let the optimiser choose; `DEFAULT_FORMATION`
     / `ATTACK_CEILING` in `optimizer.py`).
-  - **Bench budget is hard-capped** (`MAX_BENCH_COST`, default £17.5m) so the
-    bench never buys up to £5.0m+ enablers — a £4.0m reserve keeper plus ~£4.5m
-    starters — keeping the money in the XI.
+  - **Bench budget is hard-capped** (`MAX_BENCH_COST`, default £16.5m — the
+    rules floor) so the bench is the cheapest legal fodder (a 15-man squad always
+    has 4 bench players at £4.0-4.5m each, so ~£16.5m is the minimum possible),
+    keeping every spare pound in the XI.
+  - **Force players in** with `--include "Haaland, Salah"` or the `must_include`
+    list in `overrides.json` — the ILP builds the best legal squad around them.
   - **Points-per-million:** an overpriced pick is swapped for a cheaper
     equal-scorer and the saving upgrades the XI (`Pts/£m` shown per player).
   - Greedy fallback if no solver is installed.
