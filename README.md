@@ -35,10 +35,13 @@ Markdown report for every gameweek into [`reports/`](reports/).
   - **Bench = cheapest cover that will actually play.** A £4.0m reserve keeper
     (your #1 is nailed, so he never plays) and cheap *playing* defenders make
     real cover; a £4.5m forward never starts, so it's dead money.
-  - Because cheap *playing* cover exists for defenders but not forwards, the
-    model favours an **attacking shape** (more forwards in the XI = more
-    goal-scorers) with a bench of cheap playing defenders/mids — tunable via
-    `ATTACK_CEILING` in `optimizer.py`.
+  - Plays an **attacking 3-4-3 by default** (more forwards = more goal-scorers)
+    with a bench of cheap playing defenders/mids. Change it with
+    `--formation 4-3-3` (or `free` to let the optimiser choose; `DEFAULT_FORMATION`
+    / `ATTACK_CEILING` in `optimizer.py`).
+  - **Bench budget is hard-capped** (`MAX_BENCH_COST`, default £17.5m) so the
+    bench never buys up to £5.0m+ enablers — a £4.0m reserve keeper plus ~£4.5m
+    starters — keeping the money in the XI.
   - **Points-per-million:** an overpriced pick is swapped for a cheaper
     equal-scorer and the saving upgrades the XI (`Pts/£m` shown per player).
   - Greedy fallback if no solver is installed.

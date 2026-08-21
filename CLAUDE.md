@@ -50,10 +50,12 @@ Why this shape (all from the user's FPL strategy):
   midfielder/forward never starts — dead cover. So rewarding real cover pushes
   the bench toward cheap playing defenders/mids.
 - That in turn favours an **attacking XI** (more forwards started = more
-  goal-scorers), since you don't want to carry your 3 required forwards as
-  non-playing bench fodder. `ATTACK_CEILING` (default 1.0) tips genuine near-ties
-  to a 3-forward shape (4-3-3 / 3-4-3); raise it for more attack, set 0 for pure
-  mean-points.
+  goal-scorers). The default is a pinned **3-4-3** (`DEFAULT_FORMATION`, overridable
+  with `--formation`); when formation is `free`, `ATTACK_CEILING` (1.0) tips
+  near-ties to a 3-forward shape.
+- **Bench budget is hard-capped** at `MAX_BENCH_COST` (£17.5m) so it can't buy
+  £5.0m+ enablers — the practical floor for a mostly-playing bench (£4.0m reserve
+  GK + ~£4.5m starters). `BENCH_COST_WEIGHT` gently prefers cheaper within the cap.
 - **Points-per-million**: freed money upgrades the XI (`Player.value`).
 
 **Critical wiring:** `optimize_ilp` returns BOTH the squad and the XI (from the

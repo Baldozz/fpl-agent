@@ -4,6 +4,7 @@
     python -m fpl_agent --horizon 3     # weight fixtures over 3 gameweeks
     python -m fpl_agent --no-news       # skip RSS fetch (offline / faster)
     python -m fpl_agent --no-grok       # skip the xAI Grok (X) team-news query
+    python -m fpl_agent --formation 4-3-3   # pin a shape (default 3-4-3; 'free' = auto)
     python -m fpl_agent --no-cache      # force fresh API pull
     python -m fpl_agent --save          # also write reports/GW<n>.md
     python -m fpl_agent --html          # also write docs/index.html (Pages)
@@ -55,6 +56,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="write docs/index.html + docs/GW<n>.html (GitHub Pages)")
     ap.add_argument("--no-grok", action="store_true",
                     help="skip the xAI Grok (X/Twitter) team-news query")
+    ap.add_argument("--formation", default="3-4-3",
+                    help="starting shape DEF-MID-FWD (default 3-4-3), "
+                         "or 'free' to let the optimiser choose")
     args = ap.parse_args(argv)
 
     boot = api.bootstrap(use_cache=not args.no_cache)
@@ -84,7 +88,18 @@ def main(argv: list[str] | None = None) -> int:
 
     model.score_players(players, season_started)
 
-    squad = build_squad(list(players.values()))
+    if args.formation.strip().lower() == "free":
+        formation = None
+    else:
+        try:
+            d, m, f = (int(x) for x in args.formation.split("-"))
+            formation = (d, m, f)
+            if d + m + f != 10 or not (3 <= d <= 5 and 2 <= m <= 5 and 1 <= f <= 3):
+                raise ValueError
+        except ValueError:
+            print(f"Invalid --formation '{args.formation}'; using 3-4-3.")
+            formation = (3, 4, 3)
+    squad = build_squad(list(players.values()), formation)
 
     headlines: list[news.Headline] = []
     if not args.no_news:

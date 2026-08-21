@@ -18,6 +18,15 @@ BUDGET = 1000  # £100.0m in tenths
 # Per-started-forward attacking-ceiling bonus (tips near-ties to 3-4-3). Raise
 # for a more attacking bias, lower/zero for a purely mean-points team.
 ATTACK_CEILING = 1.0
+# Hard cap on total bench cost (tenths of £m). Keeps money in the XI and stops
+# the bench buying up to £5.0m+ enablers. £17.5m = the practical floor for a
+# bench that still mostly plays (£4.0m reserve GK + three ~£4.5m starters).
+MAX_BENCH_COST = 175
+# Gentle nudge toward cheaper bench *within* the cap; the cover reward keeps the
+# first subs playable.
+BENCH_COST_WEIGHT = 0.02
+# Default starting formation as (DEF, MID, FWD); None lets the optimiser choose.
+DEFAULT_FORMATION = (3, 4, 3)
 SQUAD_QUOTA = {1: 2, 2: 5, 3: 5, 4: 3}
 XI_MIN = {1: 1, 2: 3, 3: 2, 4: 1}
 XI_MAX = {1: 1, 2: 5, 3: 5, 4: 3}
@@ -77,8 +86,12 @@ def _order_bench(squad: list[Player], xi: list[Player]) -> list[Player]:
     return gk + out  # bench GK is a separate slot; outfield by likelihood to sub in
 
 
-def optimize_ilp(players: list[Player]):
-    """Return (squad, xi) as lists, or None if no solver / not optimal."""
+def optimize_ilp(players: list[Player], formation: tuple[int, int, int] | None = None):
+    """Return (squad, xi) as lists, or None if no solver / not optimal.
+
+    ``formation`` pins the starting XI outfield shape as (DEF, MID, FWD), e.g.
+    ``(3, 4, 3)`` for 3-4-3. When None the shape is free within the legal ranges.
+    """
     try:
         import pulp
     except ImportError:
@@ -115,20 +128,26 @@ def optimize_ilp(players: list[Player]):
     prob += (
         pulp.lpSum(s[i] * pm[i].projected for i in x)
         + pulp.lpSum(s[i] * attack[i] for i in x)
-        + 2.5 * pulp.lpSum(bench[i] * cover[i] for i in x)
-        - 0.0025 * pulp.lpSum(bench[i] * pm[i].cost for i in x)
+        + 1.6 * pulp.lpSum(bench[i] * cover[i] for i in x)
+        - BENCH_COST_WEIGHT * pulp.lpSum(bench[i] * pm[i].cost for i in x)
     )
 
     prob += pulp.lpSum(x.values()) == 15
     prob += pulp.lpSum(s.values()) == 11
     prob += pulp.lpSum(pm[i].cost * x[i] for i in x) <= BUDGET
+    prob += pulp.lpSum(bench[i] * pm[i].cost for i in x) <= MAX_BENCH_COST
     for i in x:
         prob += s[i] <= x[i]
     for pos, q in SQUAD_QUOTA.items():
         prob += pulp.lpSum(x[i] for i in x if pm[i].pos == pos) == q
-    for pos in (1, 2, 3, 4):
-        prob += pulp.lpSum(s[i] for i in x if pm[i].pos == pos) >= XI_MIN[pos]
-        prob += pulp.lpSum(s[i] for i in x if pm[i].pos == pos) <= XI_MAX[pos]
+    if formation is not None:
+        want = {1: 1, 2: formation[0], 3: formation[1], 4: formation[2]}
+        for pos, q in want.items():
+            prob += pulp.lpSum(s[i] for i in x if pm[i].pos == pos) == q
+    else:
+        for pos in (1, 2, 3, 4):
+            prob += pulp.lpSum(s[i] for i in x if pm[i].pos == pos) >= XI_MIN[pos]
+            prob += pulp.lpSum(s[i] for i in x if pm[i].pos == pos) <= XI_MAX[pos]
     clubs = {p.team for p in avail}
     for c in clubs:
         prob += pulp.lpSum(x[i] for i in x if pm[i].team == c) <= MAX_PER_CLUB
@@ -165,10 +184,11 @@ def optimize_greedy(players: list[Player]) -> list[Player]:
     return squad
 
 
-def build_squad(players: list[Player]) -> Squad:
-    result = optimize_ilp(list(players))
+def build_squad(players: list[Player],
+                formation: tuple[int, int, int] | None = DEFAULT_FORMATION) -> Squad:
+    result = optimize_ilp(list(players), formation)
     if result is not None:
-        chosen, xi = result       # formation decided by the ILP (cover-aware)
+        chosen, xi = result       # formation pinned / decided by the ILP
     else:
         chosen = optimize_greedy(list(players))
         xi = _pick_xi(chosen)
