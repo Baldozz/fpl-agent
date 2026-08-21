@@ -34,6 +34,42 @@ Markdown report for every gameweek into [`reports/`](reports/).
 - **Publishes a report** per gameweek to `reports/GW<n>.md`, committed to GitHub
   so there's a running history of every recommendation.
 
+## 📄 Live team page
+
+Every run can render a standalone HTML page — your starting XI laid out on a
+pitch, captain/vice, bench and team news — to `docs/index.html`. When GitHub
+Pages is enabled (Settings → Pages → Deploy from branch → `main` / `/docs`) it
+publishes at:
+
+**https://baldozz.github.io/fpl-agent/**
+
+The weekly GitHub Action regenerates it before each deadline, so the page always
+shows the current gameweek's recommendation.
+
+```bash
+python3 -m fpl_agent --html        # writes docs/index.html + docs/GW<n>.html
+```
+
+## 🔔 WhatsApp deadline reminder (free)
+
+Get a WhatsApp nudge with a link to your team page before every deadline, using
+the free **CallMeBot** service (no account, no cost). One-time setup:
+
+1. Add **+34 644 51 95 23** to your contacts.
+2. WhatsApp it: `I allow callmebot to send me messages` → you receive an API key.
+3. Set env vars (locally) or repo **secrets** `WHATSAPP_PHONE` + `WHATSAPP_APIKEY`
+   (for the GitHub Action):
+
+   ```bash
+   export WHATSAPP_PHONE="+447700900123"
+   export WHATSAPP_APIKEY="123456"
+   python3 -m fpl_agent.notify        # sends only if a deadline is <30h away
+   ```
+
+The Action already calls this each run; it silently no-ops until the secrets are
+set. Prefer a calendar alarm instead? The deadline is in every report and on the
+page's live countdown.
+
 ## Data sources (all free, no API keys)
 
 | Source | Used for |

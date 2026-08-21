@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FPL Agent — GW1 Team Sheet</title>
+<style>
+:root{
+  --bg:#f4f7f4; --panel:#ffffff; --ink:#0b1411; --muted:#5c6b63;
+  --line:#e2e8e3; --pitch1:#0f9d58; --pitch2:#0c8a4d; --green:#00b06a;
+  --magenta:#e90052; --amber:#f2a900;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#0b1411; --panel:#111d18; --ink:#eaf2ee; --muted:#8fa79b;
+    --line:#1e2e28; --pitch1:#0c6e3f; --pitch2:#0a5e36; }
+}
+:root[data-theme="light"]{ --bg:#f4f7f4; --panel:#ffffff; --ink:#0b1411;
+  --muted:#5c6b63; --line:#e2e8e3; --pitch1:#0f9d58; --pitch2:#0c8a4d; }
+:root[data-theme="dark"]{ --bg:#0b1411; --panel:#111d18; --ink:#eaf2ee;
+  --muted:#8fa79b; --line:#1e2e28; --pitch1:#0c6e3f; --pitch2:#0a5e36; }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding:24px 20px 64px}
+a{color:var(--green)}
+.muted{color:var(--muted)}
+.tnum{font-variant-numeric:tabular-nums}
+
+header.hero{display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px;
+  justify-content:space-between;padding:22px 24px;border-radius:16px;
+  background:linear-gradient(135deg,var(--pitch1),var(--pitch2));color:#fff;
+  box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.hero .gw{font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+  opacity:.85;font-weight:700}
+.hero h1{margin:.15em 0 0;font-size:clamp(26px,5vw,40px);font-weight:800;
+  letter-spacing:-.01em;text-wrap:balance}
+.hero .sub{opacity:.9;font-size:14px;margin-top:4px}
+.countdown{text-align:right}
+.countdown .big{font-size:clamp(22px,4vw,32px);font-weight:800;letter-spacing:.02em}
+.countdown .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.18em;opacity:.85}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px}
+.stat .k{font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);font-weight:700}
+.stat .v{font-size:22px;font-weight:800;margin-top:2px}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+.captain{display:flex;align-items:center;gap:18px;margin:18px 0;padding:18px 20px;
+  border-radius:14px;background:var(--panel);
+  border:1px solid var(--line);border-left:5px solid var(--magenta)}
+.captain .arm{position:static;width:38px;height:38px;font-size:16px}
+.captain .txt .role{font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--magenta);font-weight:800}
+.captain .txt .who{font-size:22px;font-weight:800}
+.captain .vice{margin-left:auto;text-align:right;color:var(--muted);font-size:14px}
+.captain .vice b{color:var(--ink)}
+
+h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:.16em;
+  color:var(--muted);font-weight:800;margin:30px 0 12px}
+
+.pitch{border-radius:16px;padding:22px 10px;
+  background:
+    repeating-linear-gradient(0deg,var(--pitch1),var(--pitch1) 46px,var(--pitch2) 46px,var(--pitch2) 92px);
+  border:1px solid rgba(0,0,0,.15);box-shadow:inset 0 0 0 3px rgba(255,255,255,.12);
+  display:flex;flex-direction:column;gap:14px}
+.line{display:flex;justify-content:center;gap:clamp(8px,3vw,34px);flex-wrap:wrap}
+.player{width:92px;text-align:center;color:#fff}
+.player .shirt{position:relative;height:44px;width:44px;margin:0 auto 6px;
+  border-radius:9px 9px 12px 12px;
+  background:linear-gradient(#ffffff,#e9efe9);
+  box-shadow:0 3px 8px rgba(0,0,0,.28)}
+.shirt[data-pos="1"]{background:linear-gradient(#ffd54a,#f2a900)}
+.shirt[data-pos="2"]{background:linear-gradient(#63d2ff,#2aa9e0)}
+.shirt[data-pos="3"]{background:linear-gradient(#ffffff,#e9efe9)}
+.shirt[data-pos="4"]{background:linear-gradient(#ff7aa8,#e90052)}
+.player.cap .shirt{outline:2px solid #fff;outline-offset:2px}
+.arm{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;
+  display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;
+  background:#333;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.arm.c{background:var(--magenta)}
+.arm.v{background:#7a2c8f}
+.arm.b{background:#2a3b34}
+.flag{position:absolute;bottom:-6px;left:-6px;width:18px;height:18px;border-radius:50%;
+  background:var(--amber);color:#3a2a00;display:grid;place-items:center;
+  font-weight:900;font-size:12px}
+.pname{font-weight:800;font-size:13px;line-height:1.15;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.pmeta{display:flex;justify-content:center;gap:6px;font-size:11px;
+  text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.pmeta .proj{font-weight:800;font-variant-numeric:tabular-nums}
+.pprice{font-size:11px;opacity:.9;font-variant-numeric:tabular-nums;
+  text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.chips{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:4px}
+.chip{font-size:9px;background:rgba(0,0,0,.35);padding:1px 6px;border-radius:20px;
+  text-transform:uppercase;letter-spacing:.04em}
+
+.bench-row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.bench-row .player{color:var(--ink)}
+.bench-row .pname,.bench-row .pmeta,.bench-row .pprice{text-shadow:none}
+
+ul.news{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px}
+ul.news li{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;
+  flex-wrap:wrap;align-items:baseline;gap:8px;justify-content:space-between}
+ul.news a{font-weight:600;text-decoration:none}
+ul.news a:hover{text-decoration:underline}
+ul.news .src{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+
+.method{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:16px 20px;color:var(--muted);font-size:14px}
+.method b{color:var(--ink)}
+footer{margin-top:34px;color:var(--muted);font-size:12px;text-align:center}
+footer .disc{margin-top:8px}
+</style>
+</head>
+<body>
+
+  <div class="wrap">
+    <header class="hero">
+      <div>
+        <div class="gw">Gameweek 1 · Recommendation</div>
+        <h1>Your Team Sheet</h1>
+        <div class="sub">Generated 2026-08-21 14:13 UTC · Deadline Fri 21 Aug, 17:30 UTC</div>
+      </div>
+      <div class="countdown">
+        <div class="big tnum" id="cd" data-deadline="2026-08-21T17:30:00Z">—</div>
+        <div class="lbl">until deadline</div>
+      </div>
+    </header>
+
+    <section class="stats">
+      <div class="stat"><div class="k">Formation</div>
+        <div class="v tnum">5-4-1</div></div>
+      <div class="stat"><div class="k">Squad cost</div>
+        <div class="v tnum">£100.0m</div></div>
+      <div class="stat"><div class="k">In the bank</div>
+        <div class="v tnum">£0.0m</div></div>
+      <div class="stat"><div class="k">Proj. XI (C×2)</div>
+        <div class="v tnum">53.2</div></div>
+    </section>
+
+    <div class="captain">
+      <span class="arm c">C</span>
+      <div class="txt">
+        <div class="role">Captain · doubles his points</div>
+        <div class="who">B.Fernandes
+          <span class="muted tnum" style="font-size:15px">
+          MUN · 5.8 proj</span></div>
+      </div>
+      <div class="vice">Vice-captain<br><b>Gabriel</b>
+        · 5.8</div>
+    </div>
+
+    <h2 class="sec">Starting XI — 5-4-1</h2>
+    <div class="pitch"><div class="line">
+      <div class="player">
+        <div class="shirt" data-pos="1"></div>
+        <div class="pname">Raya</div>
+        <div class="pmeta"><span>ARS</span>
+          <span class="proj">4.8</span></div>
+        <div class="pprice">£6.0m</div>
+        <div class="chips"><span class="chip">easy fixture</span></div>
+      </div></div><div class="line">
+      <div class="player">
+        <div class="shirt" data-pos="2"><span class="arm v" title="Vice-captain">V</span></div>
+        <div class="pname">Gabriel</div>
+        <div class="pmeta"><span>ARS</span>
+          <span class="proj">5.8</span></div>
+        <div class="pprice">£8.0m</div>
+        <div class="chips"><span class="chip">easy fixture</span></div>
+      </div>
+      <div class="player">
+        <div class="shirt" data-pos="2"></div>
+        <div class="pname">Mukiele</div>
+        <div class="pmeta"><span>SUN</span>
+          <span class="proj">3.9</span></div>
+        <div class="pprice">£5.5m</div>
+        <div class="chips"><span class="chip">easy fixture</span></div>
+      </div>
+      <div class="player">
+        <div class="shirt" data-pos="2"></div>
+        <div class="pname">O&#x27;Reilly</div>
+        <div class="pmeta"><span>MCI</span>
+          <span class="proj">3.7</span></div>
+        <div class="pprice">£6.5m</div>
+        
+      </div>
+      <div class="player">
+        <div class="shirt" data-pos="2"></div>
+        <div class="pname">Guéhi</div>
+        <div class="pmeta"><span>MCI</span>
+          <span class="proj">3.7</span></div>
+        <div class="pprice">£6.0m</div>
+        
+      </div>
+      <div class="player">
+        <div class="shirt" data-pos="2"></div>
+        <div class="pname">Virgil</div>
+        <div class="pmeta"><span>LIV</span>
+          <span class="proj">3.7</span></div>
+        <div class="pprice">£6.5m</div>
+        
+      </div></div><div class="line">
+      <div class="player cap">
+        <div class="shirt" data-pos="3"><span class="arm c" title="Captain (2x points)">C</span></div>
+        <div class="pname">B.Fernandes</div>
+        <div class="pmeta"><span>MUN</span>
+          <span class="proj">5.8</span></div>
+        <div class="pprice">£12.0m</div>
+        <div class="chips"><span class="chip">easy fixture</span></div>
+      </div>
+      <div class="player">
+        <div class="shirt" data-pos="3"></div>
+        <div class="pname">Gibbs-White</div>
+        <div class="pmeta"><span>NFO</span>
+          <span class="proj">4.3</span></div>
+        <div class="pprice">£8.0m</div>
+        <div class="chips"><span class="chip">easy fixture</span></div>
+      </div>
+      <div class="player">
+        <div class="shirt" data-pos="3"></div>
+        <div class="pname">Rice</div>
+        <div class="pmeta"><span>ARS</span>
+          <span class="proj">4.1</span></div>
+        <div class="pprice">£7.5m</div>
+        <div class="chips"><span class="chip">easy fixture</span></div>
+      </div>
+      <div class="player">
+        <div class="shirt" data-pos="3"></div>
+        <div class="pname">Mbeumo</div>
+        <div class="pmeta"><span>MUN</span>
+          <span class="proj">4.0</span></div>
+        <div class="pprice">£8.0m</div>
+        <div class="chips"><span class="chip">easy fixture</span></div>
+      </div></div><div class="line">
+      <div class="player">
+        <div class="shirt" data-pos="4"></div>
+        <div class="pname">João Pedro</div>
+        <div class="pmeta"><span>CHE</span>
+          <span class="proj">3.5</span></div>
+        <div class="pprice">£7.5m</div>
+        
+      </div></div></div>
+
+    <h2 class="sec">Bench — substitution order</h2>
+    <div class="bench-row">
+      <div class="player">
+        <div class="shirt" data-pos="1"><span class="arm b" title="Bench order">1</span></div>
+        <div class="pname">Benitez</div>
+        <div class="pmeta"><span>CRY</span>
+          <span class="proj">3.9</span></div>
+        <div class="pprice">£4.5m</div>
+        
+      </div>
+      <div class="player">
+        <div class="shirt" data-pos="3"><span class="arm b" title="Bench order">2</span></div>
+        <div class="pname">I.Sangaré</div>
+        <div class="pmeta"><span>NFO</span>
+          <span class="proj">2.5</span></div>
+        <div class="pprice">£5.0m</div>
+        
+      </div>
+      <div class="player">
+        <div class="shirt" data-pos="4"><span class="arm b" title="Bench order">3</span></div>
+        <div class="pname">Furo</div>
+        <div class="pmeta"><span>BRE</span>
+          <span class="proj">1.0</span></div>
+        <div class="pprice">£4.5m</div>
+        
+      </div>
+      <div class="player">
+        <div class="shirt" data-pos="4"><span class="arm b" title="Bench order">4</span></div>
+        <div class="pname">Scarlett</div>
+        <div class="pmeta"><span>TOT</span>
+          <span class="proj">1.0</span></div>
+        <div class="pprice">£4.5m</div>
+        
+      </div></div>
+
+    <h2 class="sec">Team news — free RSS feeds</h2>
+    <ul class="news"><li><a href="https://www.bbc.co.uk/sport/football/articles/cdrv86006r4o?at_medium=RSS&amp;at_campaign=rss" target="_blank" rel="noopener">I missed being valued as a footballer - Walti</a><span class="src">BBC Sport – Football</span></li><li><a href="https://www.bbc.co.uk/sport/football/articles/cn0np755k4wo?at_medium=RSS&amp;at_campaign=rss" target="_blank" rel="noopener">Is Haaland worth the price? Pick Rogers or Palmer? Five key FPL questions</a><span class="src">BBC Sport – Football</span></li><li><a href="https://www.bbc.co.uk/sport/football/articles/c171k9kd94zo?at_medium=RSS&amp;at_campaign=rss" target="_blank" rel="noopener">Jaissle on pain which set him on path to Newcastle and speaking with Howe</a><span class="src">BBC Sport – Premier League</span></li><li><a href="https://www.theguardian.com/football/2026/aug/21/premier-league-2026-27-preview-no-20-tottenham" target="_blank" rel="noopener">Premier League 2026-27 preview No 20: Tottenham</a><span class="src">The Guardian – Football</span></li><li><a href="https://www.theguardian.com/football/2026/aug/21/sergej-jakirovic-hull-premier-league-return" target="_blank" rel="noopener">Jovial Jakirovic determined to haul Hull over and beyond Coles’ relegation jibes</a><span class="src">The Guardian – Football</span></li><li><a href="https://www.theguardian.com/football/2026/aug/21/new-rules-managers-pundits-premier-league-season-2026-2027" target="_blank" rel="noopener">New rules, managers and pundits: what’s different this Premier League season?</a><span class="src">The Guardian – Football</span></li><li><a href="https://www.theguardian.com/football/2026/aug/21/premier-league-2026-27-preview-no-19-sunderland" target="_blank" rel="noopener">Premier League 2026-27 preview No 19: Sunderland</a><span class="src">The Guardian – Football</span></li><li><a href="https://www.theguardian.com/football/2026/aug/20/premier-league-2026-27-preview-no-18-nottingham-forest" target="_blank" rel="noopener">Premier League 2026-27 preview No 18: Nottingham Forest</a><span class="src">The Guardian – Football</span></li><li><a href="https://www.theguardian.com/football/2026/aug/20/premier-league-2026-27-preview-no-17-newcastle" target="_blank" rel="noopener">Premier League 2026-27 preview No 17: Newcastle</a><span class="src">The Guardian – Football</span></li><li><a href="https://www.skysports.com/boxing/news/12040/13575393/tyson-fury-claims-anthony-joshua-fight-in-serious-doubt-after-his-british-rival-asked-for-more-money" target="_blank" rel="noopener">&#x27;Keep on running!&#x27; Fury claims AJ fight in doubt</a><span class="src">Sky Sports – Premier League</span></li></ul>
+
+    <h2 class="sec">How this XI was chosen</h2>
+    <div class="method">
+      Squad picked by <b>integer linear programming</b> to maximise projected
+      starting-XI points within the £100.0m budget, the 2/5/5/3 quota and the
+      max-3-per-club rule. Each projection blends FPL's own <b>ep_next</b>,
+      last-season points-per-game and live form, then scales by <b>fixture
+      difficulty</b> and <b>injury/availability</b>. Model mode: <b>Season opener — last-season output + FPL ep_next + fixtures</b>.
+    </div>
+
+    <footer>
+      <div>Built by the FPL Agent · free FPL API + free football RSS ·
+        <a href="https://github.com/Baldozz/fpl-agent">source on GitHub</a></div>
+      <div class="disc">⚠️ Advisory only — enter the team yourself on the FPL
+        site before the deadline. Not affiliated with the Premier League or FPL.</div>
+    </footer>
+  </div>
+<script>
+(function(){
+  var el=document.getElementById('cd');
+  if(!el)return;
+  var target=new Date(el.getAttribute('data-deadline')).getTime();
+  function tick(){
+    var d=target-Date.now();
+    if(d<=0){el.textContent='DEADLINE PASSED';return;}
+    var h=Math.floor(d/3.6e6),m=Math.floor(d%3.6e6/6e4),
+        days=Math.floor(h/24);
+    el.textContent = days>0 ? days+'d '+(h%24)+'h '+m+'m' : h+'h '+m+'m';
+  }
+  tick();setInterval(tick,30000);
+})();
+</script>
+</body>
+</html>

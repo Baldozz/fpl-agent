@@ -12,10 +12,13 @@ import argparse
 from pathlib import Path
 
 from . import api, model, news
+from .html_report import render_html
 from .optimizer import build_squad
 from .report import render
 
-REPORTS = Path(__file__).resolve().parent.parent / "reports"
+ROOT = Path(__file__).resolve().parent.parent
+REPORTS = ROOT / "reports"
+DOCS = ROOT / "docs"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -26,6 +29,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--no-cache", action="store_true")
     ap.add_argument("--save", action="store_true",
                     help="write reports/GW<n>.md")
+    ap.add_argument("--html", action="store_true",
+                    help="write docs/index.html + docs/GW<n>.html (GitHub Pages)")
     args = ap.parse_args(argv)
 
     boot = api.bootstrap(use_cache=not args.no_cache)
@@ -63,6 +68,14 @@ def main(argv: list[str] | None = None) -> int:
         out = REPORTS / f"GW{gw:02d}.md"
         out.write_text(md)
         print(f"\n[written] {out}")
+
+    if args.html:
+        DOCS.mkdir(exist_ok=True)
+        page = render_html(squad, gw, nxt["deadline_time"], season_started,
+                           headlines)
+        (DOCS / "index.html").write_text(page)
+        (DOCS / f"GW{gw:02d}.html").write_text(page)
+        print(f"[written] {DOCS/'index.html'} and {DOCS/f'GW{gw:02d}.html'}")
     return 0
 
 

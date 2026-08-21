@@ -20,16 +20,21 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt
-      - name: Generate report
-        run: python -m fpl_agent --horizon 3 --save
-      - name: Commit report if changed
+      - name: Generate report + HTML page
+        run: python -m fpl_agent --horizon 3 --save --html
+      - name: Send WhatsApp reminder (no-op unless secrets are set)
+        env:
+          WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
+          WHATSAPP_APIKEY: ${{ secrets.WHATSAPP_APIKEY }}
+        run: python -m fpl_agent.notify
+      - name: Commit report + page if changed
         run: |
           git config user.name  "fpl-agent-bot"
           git config user.email "actions@github.com"
-          git add reports/
+          git add reports/ docs/
           if git diff --cached --quiet; then
-            echo "No report changes."
+            echo "No changes."
           else
-            git commit -m "chore: weekly FPL report [skip ci]"
+            git commit -m "chore: weekly FPL report + page [skip ci]"
             git push
           fi
