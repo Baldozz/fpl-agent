@@ -106,26 +106,41 @@ def _run_live(args, boot, cur, nxt) -> int:
         print("No team id. Pass --team-id N, set FPL_TEAM_ID, or configure "
               "~/.fpl-mcp/config.json.")
         return 1
-    gw = (cur or nxt)["id"]
-    team = live.fetch_live_team(team_id, gw, boot)
+    cur_gw = (cur or nxt)["id"]
+    # Every gameweek that has a submitted team (finished ones + the current one).
+    available = [e["id"] for e in boot["events"]
+                 if e.get("finished") or e.get("is_current")]
+    if cur_gw not in available:
+        available.append(cur_gw)
+    available = sorted(set(available))
+    deadline = (cur or nxt)["deadline_time"]
 
-    headlines: list[news.Headline] = []
-    if not args.no_news:
-        names = {p.name for p in team.xi + team.bench}
-        team_full = {t["name"] for t in boot["teams"]}
-        headlines = news.relevant_headlines(
-            news.fetch_headlines(), names, team_full)
+    team_full = {t["name"] for t in boot["teams"]}
+    rss = news.fetch_headlines() if not args.no_news else []
 
-    page = render_live_html(team, gw, (cur or nxt)["deadline_time"], headlines)
-    print(f"GW{gw} live: {team.entry_name} — {team.total_points} pts "
-          f"(C: {team.captain.name if team.captain else '—'}), "
-          f"rank {team.overall_rank:,}" if team.overall_rank else
-          f"GW{gw} live: {team.total_points} pts")
+    pages = 0
+    for g in available:
+        try:
+            team = live.fetch_live_team(team_id, g, boot)
+        except Exception as e:
+            print(f"[live] GW{g} skipped: {e}")
+            continue
+        headlines = (news.relevant_headlines(
+            rss, {p.name for p in team.xi + team.bench}, team_full)
+            if g == cur_gw and rss else [])
+        page = render_live_html(team, g, deadline, headlines,
+                                available_gws=available)
+        if args.html or args.save:
+            DOCS.mkdir(exist_ok=True)
+            (DOCS / f"live-gw{g}.html").write_text(page)
+            if g == cur_gw:
+                (DOCS / "live.html").write_text(page)   # default = current GW
+        if g == cur_gw:
+            print(f"GW{g} live: {team.entry_name} — {team.total_points} pts "
+                  f"(C: {team.captain.name if team.captain else '—'})")
+        pages += 1
     if args.html or args.save:
-        DOCS.mkdir(exist_ok=True)
-        (DOCS / "live.html").write_text(page)
-        (DOCS / f"GW{gw:02d}-live.html").write_text(page)
-        print(f"[written] {DOCS/'live.html'}")
+        print(f"[written] {pages} live page(s) incl. {DOCS/'live.html'}")
     return 0
 
 

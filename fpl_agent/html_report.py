@@ -298,24 +298,62 @@ def _body(squad: Squad, gw: int, deadline: str, season_started: bool,
   </div>"""
 
 
-def _live_card(p, captain_mult: int) -> str:
-    badge = ""
-    if p.is_captain:
-        badge = f'<span class="arm c" title="Captain">C</span>'
-    elif p.is_vice:
-        badge = '<span class="arm v" title="Vice-captain">V</span>'
+def _kit_url(team_code: int, pos: int) -> str:
+    suffix = "_1" if pos == 1 else ""
+    return ("https://fantasy.premierleague.com/dist/img/shirts/standard/"
+            f"shirt_{team_code}{suffix}-66.png")
+
+
+# FPL-style "Points" pitch: kit image, dark name bar, points bar underneath.
+LIVE_CSS = """
+.gwbar{display:flex;align-items:center;gap:10px;margin:14px 0 4px;flex-wrap:wrap}
+.gwsel{font:inherit;font-weight:700;padding:8px 12px;border-radius:10px;
+  border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.fpitch{border-radius:16px;padding:18px 8px;
+  background:repeating-linear-gradient(0deg,#0f9d58,#0f9d58 44px,#0c8a4d 44px,#0c8a4d 88px);
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.12);display:flex;flex-direction:column;gap:12px}
+.frow{display:flex;justify-content:center;gap:clamp(6px,2.4vw,26px);flex-wrap:wrap}
+.fp{width:76px;text-align:center;position:relative}
+.kitwrap{position:relative;height:50px;display:flex;align-items:center;justify-content:center}
+.kitwrap img{height:50px;width:auto}
+.kitwrap.nokit{border-radius:8px 8px 12px 12px;height:44px;width:44px;margin:3px auto 0}
+.kitwrap.nokit[data-pos="1"]{background:linear-gradient(#ffd54a,#f2a900)}
+.kitwrap.nokit[data-pos="2"]{background:linear-gradient(#63d2ff,#2aa9e0)}
+.kitwrap.nokit[data-pos="3"]{background:linear-gradient(#fff,#e9efe9)}
+.kitwrap.nokit[data-pos="4"]{background:linear-gradient(#ff7aa8,#e90052)}
+.fp .nm{background:#2d0a31;color:#fff;font-size:11px;font-weight:700;
+  border-radius:5px 5px 0 0;padding:3px 4px;margin-top:4px;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis}
+.fp .pt{background:#fff;color:#2d0a31;font-weight:800;font-size:13px;
+  border-radius:0 0 5px 5px;padding:2px;font-variant-numeric:tabular-nums}
+.fp .mins{font-size:10px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);margin-top:2px}
+.fp.cap .nm{background:var(--magenta)}
+.fp .band{position:absolute;top:-6px;right:6px;width:20px;height:20px;border-radius:50%;
+  background:var(--magenta);color:#fff;font-size:11px;font-weight:800;display:grid;
+  place-items:center;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.fp .band.v{background:#7a2c8f}
+.benchbar{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:14px 8px;display:flex;justify-content:center;gap:clamp(6px,3vw,26px);flex-wrap:wrap}
+.benchbar .fp .mins{color:var(--muted);text-shadow:none}
+.capx{color:#fff}
+"""
+
+
+def _live_card(p, captain_mult: int = 2) -> str:
+    band = ('<span class="band">C</span>' if p.is_captain else
+            '<span class="band v">V</span>' if p.is_vice else "")
     net = p.points * (p.multiplier or 1)
-    # dim players whose match hasn't started; highlight the live score
-    cls = "player" + (" cap" if p.is_captain else "")
-    dim = "" if p.started_fixture else ' style="opacity:.55"'
-    capx = f' <span class="capx">×{p.multiplier}</span>' if p.multiplier > 1 else ""
+    capx = f'<span class="capx"> ×{p.multiplier}</span>' if p.multiplier > 1 else ""
+    dim = "" if p.started_fixture else ' style="opacity:.5"'
+    kit = _kit_url(p.team_code, p.pos)
     return f"""
-      <div class="{cls}"{dim}>
-        <div class="shirt" data-pos="{p.pos}">{badge}</div>
-        <div class="pname">{_esc(p.name)}</div>
-        <div class="pmeta"><span>{_esc(p.team_name)}</span>
-          <span class="proj">{net}{capx}</span></div>
-        <div class="pprice">{p.minutes}'</div>
+      <div class="fp{' cap' if p.is_captain else ''}"{dim}>
+        <div class="kitwrap" data-pos="{p.pos}">{band}<img src="{kit}"
+          alt="{_esc(p.team_name)}" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">{_esc(p.name)}</div>
+        <div class="pt">{net}{capx}</div>
+        <div class="mins">{p.minutes}&#39;</div>
       </div>"""
 
 
@@ -477,25 +515,37 @@ def render_league_html(league) -> str:
 
 
 def render_live_html(team, gw: int, deadline: str,
-                     headlines: list[Headline], full_document: bool = True) -> str:
-    """Render the manager's ACTUAL team with LIVE gameweek scores."""
-    from datetime import datetime, timezone
+                     headlines: list[Headline], full_document: bool = True,
+                     available_gws: list[int] | None = None) -> str:
+    """Render the manager's ACTUAL team with LIVE gameweek scores (FPL layout)."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     def line(pos):
-        cards = "".join(_live_card(p, team.captain.multiplier if team.captain else 2)
+        cards = "".join(_live_card(p)
                         for p in sorted([q for q in team.xi if q.pos == pos],
                                         key=lambda z: -z.net_points))
-        return f'<div class="line">{cards}</div>'
-    pitch = f'<div class="pitch">{"".join(line(pos) for pos,_ in POS_ROWS)}</div>'
-    bench = "".join(_live_card(p, 1) for p in team.bench)
+        return f'<div class="frow">{cards}</div>'
+    pitch = f'<div class="fpitch">{"".join(line(pos) for pos,_ in POS_ROWS)}</div>'
+    bench = "".join(_live_card(p) for p in team.bench)
     played = sum(1 for p in team.xi if p.started_fixture)
     chip = f' · chip: {team.active_chip}' if team.active_chip else ""
     rank = f"{team.overall_rank:,}" if team.overall_rank else "—"
+
+    gwsel = ""
+    if available_gws:
+        opts = "".join(
+            f'<option value="live-gw{g}.html"{" selected" if g == gw else ""}>'
+            f'Gameweek {g}</option>' for g in available_gws)
+        gwsel = (f'<div class="gwbar"><label for="gw">View gameweek:</label>'
+                 f'<select id="gw" class="gwsel" '
+                 f'onchange="if(this.value)location.href=this.value">{opts}</select>'
+                 f'<a class="btn" href="./index.html">Dashboard</a>'
+                 f'<a class="btn" href="./league.html">League</a></div>')
+
     content = f"""
     <header class="hero">
       <div>
-        <div class="gw">Gameweek {gw} · Live</div>
+        <div class="gw">Gameweek {gw} · Points</div>
         <h1>{_esc(team.entry_name or 'My Team')}</h1>
         <div class="sub">{_esc(team.manager_name)} · updated {now}{chip}</div>
       </div>
@@ -504,6 +554,7 @@ def render_live_html(team, gw: int, deadline: str,
         <div class="lbl">GW{gw} points</div>
       </div>
     </header>
+    {gwsel}
 
     <section class="stats">
       <div class="stat"><div class="k">GW points</div>
@@ -530,7 +581,7 @@ def render_live_html(team, gw: int, deadline: str,
     <h2 class="sec">Starting XI — live points</h2>
     {pitch}
     <h2 class="sec">Bench</h2>
-    <div class="bench-row">{bench}</div>
+    <div class="benchbar">{bench}</div>
 """
     if headlines:
         content += ('<h2 class="sec">Team news — live from X &amp; RSS</h2>'
@@ -542,7 +593,7 @@ def render_live_html(team, gw: int, deadline: str,
       <div class="disc">Live scores update as matches are played; provisional
         until the gameweek is finalised (bonus points, auto-subs).</div>
     </footer>"""
-    css_extra = ".capx{color:var(--magenta);font-weight:800}"
+    css_extra = LIVE_CSS + DASH_CSS
     body = f'<div class="wrap">{content}</div>'
     if not full_document:
         return f"<style>{CSS}{css_extra}</style>{body}"

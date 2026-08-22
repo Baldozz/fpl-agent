@@ -22,6 +22,7 @@ POS = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
 class LivePick:
     name: str
     team_name: str
+    team_code: int
     pos: int
     cost: int
     slot: int            # 1..15 (1..11 = starting XI, 12..15 = bench order)
@@ -151,6 +152,7 @@ def fetch_live_team(team_id: int, gw: int, bootstrap: dict) -> LiveTeam:
         pid = p["element"]
         return LivePick(
             name=el["web_name"], team_name=team_short[el["team"]],
+            team_code=el.get("team_code", 0),
             pos=el["element_type"], cost=el["now_cost"],
             slot=p["position"], multiplier=p["multiplier"],
             is_captain=p["is_captain"], is_vice=p["is_vice_captain"],
