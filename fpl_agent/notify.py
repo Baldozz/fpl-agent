@@ -29,11 +29,9 @@ from .agent import whatsapp_summary
 
 ROOT = Path(__file__).resolve().parent.parent
 STATE_PATH = ROOT / "state" / "alerts.json"
-# Public page URL for the alert link. Empty by default now that the repo is
-# private (GitHub Pages is disabled for private repos on the Free plan), so the
-# self-contained plan in the message isn't followed by a dead 404 link. Set
-# FPL_PAGE_URL if you re-enable a public/hosted page.
-PAGE_URL = os.environ.get("FPL_PAGE_URL", "")
+# Public dashboard URL appended to alerts. Override with FPL_PAGE_URL; set to
+# "" if the repo/Pages ever go private again (Free-plan Pages needs a public repo).
+PAGE_URL = os.environ.get("FPL_PAGE_URL", "https://baldozz.github.io/fpl-agent/")
 WINDOW_LO = float(os.environ.get("FPL_DEADLINE_WINDOW_LO", "1.0"))   # hours
 WINDOW_HI = float(os.environ.get("FPL_DEADLINE_WINDOW_HI", "2.0"))   # hours
 
