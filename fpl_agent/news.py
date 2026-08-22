@@ -8,6 +8,7 @@ available; add or remove feeds in ``FEEDS`` freely.
 """
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 # Free public RSS feeds. No API keys required. Kept to Premier-League-focused
@@ -19,6 +20,20 @@ FEEDS = {
         "https://www.theguardian.com/football/premierleague/rss",
     "The Guardian – Football": "https://www.theguardian.com/football/rss",
 }
+
+# Negative-only signals for driving selection. Each maps a start probability to
+# the phrases that imply it. OUT beats DOUBT when both appear. Phrases are kept
+# specific (e.g. "ruled out", not bare "out for") to avoid false matches like
+# "10 things to look out for"; parsing uses headline TITLES only for precision.
+SIGNAL_LEVELS = [
+    (0.0, ("ruled out", "will miss", "set to miss", "expected to miss",
+           "misses the", "sidelined", "injury blow", "suspended", "banned",
+           "out injured", "long-term absence", "ruled him out",
+           "won't play", "will not play", "out of the game")),
+    (0.4, ("major doubt", "doubtful", "in doubt", "fitness test",
+           "race to be fit", "injury concern", "rated doubtful",
+           "could miss", "may miss", "a doubt for")),
+]
 
 INJURY_KEYWORDS = (
     "injury", "injured", "doubt", "ruled out", "sidelined", "return",
@@ -60,6 +75,39 @@ def fetch_headlines(limit_per_feed: int = 15) -> list[Headline]:
                 link=getattr(entry, "link", ""),
                 summary=getattr(entry, "summary", "")[:280],
             ))
+    return out
+
+
+def parse_start_signals(headlines: list[Headline],
+                        player_names: set[str]) -> dict[str, dict]:
+    """Turn RSS headlines into NEGATIVE start-probability signals for selection.
+
+    For each headline, if a player's name (>=4 chars, word-boundary) co-occurs
+    with an injury/availability phrase, emit ``{name: {start_prob, reason,
+    source}}``. Negative-only (never promotes a player) to stay safe against
+    noisy headlines; keeps the most severe signal per player. Lowest precedence —
+    Grok and manual overrides supersede it (see cli layering).
+    """
+    names = [n for n in player_names if len(n) >= 4]
+    patterns = {n: re.compile(r"\b" + re.escape(n.lower()) + r"\b") for n in names}
+    out: dict[str, dict] = {}
+    for h in headlines:
+        # Titles only — summaries pull in unrelated names/phrases and hurt
+        # precision for something that auto-benches players.
+        text = h.title.lower()
+        level = None
+        for prob, phrases in SIGNAL_LEVELS:
+            if any(ph in text for ph in phrases):
+                level = prob
+                break
+        if level is None:
+            continue
+        for n in names:
+            if patterns[n].search(text):
+                prev = out.get(n)
+                if prev is None or level < prev["start_prob"]:
+                    out[n] = {"start_prob": level,
+                              "reason": h.title[:140], "source": "rss"}
     return out
 
 

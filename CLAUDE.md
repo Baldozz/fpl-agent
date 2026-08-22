@@ -71,11 +71,13 @@ is silently discarded. `_pick_xi` is only for the greedy fallback.
 ## Predicting starts (the crux of FPL)
 
 `Player.start_prob` (0..1) gates a player's projection (an injured/benched
-player scores ~0). It comes from, in order of precedence: a human/Grok override
-in `overrides.json`, else a last-season minutes/starts model
-(`_minutes_security`). Add knowledge the API lacks — unannounced injuries,
-World-Cup-return rotation, nailed new signings — to `overrides.json` (or let
-Grok populate it).
+player scores ~0). Signal precedence (low→high), layered via `overrides.merge`
+in `cli.py`: **RSS < file override < Grok(X)**, with a `pin`ned file entry
+beating everything; if none apply it falls back to the minutes model
+(`_minutes_security`). `news.parse_start_signals` turns RSS headline TITLES into
+negative-only start-prob signals (never promotes; title-only for precision). Add
+knowledge the API lacks — unannounced injuries, rotation, nailed new signings —
+to `overrides.json` (or let Grok/RSS populate it).
 
 ## Interactive MCP (fantasy-pl-mcp)
 
@@ -104,6 +106,14 @@ xAI's live-search endpoint is unavailable — keep that graceful fallback.
 - Base = weighted blend of `ep_next`, `points_per_game`, and live `form`
   (form only weighted once `season_started`).
 - `_fdr_multiplier(fdr)` scales by fixture difficulty (1 easy … 5 hard).
+- `_mismatch_multiplier(team_strength, opp_strength)` favours the stronger side of
+  a fixture (top vs bottom) using the strength gap; dial via `MISMATCH_WEIGHT`.
+  `attach_fixtures` records `opp_strength` (needs the `team_strength_map`).
+- **Season-transition guard:** FPL's `minutes/starts/ppg/form` hold the CURRENT
+  season only, so they're ~0 in the opening weeks (a team yet to play shows 0).
+  `score_players(..., games_played)` therefore leans on `ep_next` and a fit-player
+  start prior until ~4 games are in, then switches to live form + minutes model.
+  `games_played = count of finished events`.
 - `_availability_mult(status, chance)` zeroes injured/suspended players and
   scales "doubtful" ones by the published % chance of playing.
 - `attach_fixtures()` sets each player's average FDR and fixture count over the

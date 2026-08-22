@@ -45,6 +45,7 @@ class Player:
     fdr: float = 3.0     # avg fixture difficulty over horizon (lower = easier)
     n_fix: int = 1       # number of fixtures in horizon (DGW awareness)
     team_strength: float = 3.0   # own-team quality 1..5 (CS / attack prior)
+    opp_strength: float = 3.0    # avg opponent quality 1..5 over the horizon
     start_prob: float = 1.0      # P(starts) after news/overrides/minutes model
     override_reason: str = ""    # why start_prob was set by human/Grok
     projected: float = 0.0
@@ -164,32 +165,56 @@ def apply_start_signals(players: dict[int, Player],
 
 
 def attach_fixtures(players: dict[int, Player], fixtures: list[dict],
-                    start_event: int, horizon: int) -> None:
-    """Attach average FDR over the next ``horizon`` gameweeks to each player."""
+                    start_event: int, horizon: int,
+                    strength: dict[int, float] | None = None) -> None:
+    """Attach average FDR and opponent strength over the next ``horizon`` GWs.
+
+    ``strength`` maps team id -> overall quality (~1..5), used to record each
+    player's average OPPONENT strength so the model can favour the stronger side
+    of a fixture (top team vs bottom team).
+    """
+    strength = strength or {}
     events = set(range(start_event, start_event + horizon))
     by_team: dict[int, list[float]] = {}
+    opp_by_team: dict[int, list[float]] = {}
     for fx in fixtures:
         ev = fx.get("event")
         if ev is None or ev not in events:
             continue
-        by_team.setdefault(fx["team_h"], []).append(fx["team_h_difficulty"])
-        by_team.setdefault(fx["team_a"], []).append(fx["team_a_difficulty"])
+        h, a = fx["team_h"], fx["team_a"]
+        by_team.setdefault(h, []).append(fx["team_h_difficulty"])
+        by_team.setdefault(a, []).append(fx["team_a_difficulty"])
+        # opponent strength: home team's opponent is the away team, and vice versa
+        opp_by_team.setdefault(h, []).append(strength.get(a, 3.0))
+        opp_by_team.setdefault(a, []).append(strength.get(h, 3.0))
     for p in players.values():
         diffs = by_team.get(p.team, [])
         p.n_fix = len(diffs)
         p.fdr = sum(diffs) / len(diffs) if diffs else 5.0  # no fixture -> penalise
+        opps = opp_by_team.get(p.team, [])
+        p.opp_strength = sum(opps) / len(opps) if opps else 3.0
 
 
-def _minutes_security(minutes: int, starts: int) -> float:
-    """Estimate P(starts) from last-season workload — the 'is he nailed?' prior.
+FIT_PRIOR = 0.80  # early-season default P(starts) for an available player
 
-    A 30+ start, 2500+ minute player is a lock (~1.0); fringe/rotated players and
-    those with little PL history are discounted. New signings / promoted players
-    with few PL minutes score low here by design — override them in
-    ``overrides.json`` (or via Grok) when they're genuinely nailed on.
+
+def _minutes_security(minutes: int, starts: int, games_played: int,
+                      status: str, chance: int | None) -> float:
+    """Estimate P(starts) — the 'is he nailed?' prior.
+
+    The FPL ``minutes``/``starts`` fields hold the CURRENT season only, which is
+    ~0 in the opening weeks, so a minutes model is unreliable until a few games
+    are played. Early season we therefore assume an available player is a likely
+    starter (``FIT_PRIOR``) and let injury news / Grok / overrides demote him;
+    once ~4+ games are in, we switch to actual minutes/starts per game.
     """
-    m = min(minutes, 2600) / 2600.0
-    s = min(starts, 30) / 30.0
+    if games_played < 4:
+        if status == "a" and (chance is None or chance >= 75):
+            return FIT_PRIOR
+        return 0.5  # flagged/doubtful; availability multiplier handles the rest
+    exp_min = games_played * 90
+    m = min(minutes, exp_min) / exp_min
+    s = min(starts, games_played) / games_played
     return round(0.30 + 0.70 * (0.6 * m + 0.4 * s), 3)
 
 
@@ -199,7 +224,21 @@ def _team_multiplier(pos: int, strength: float) -> float:
     return 1.0 + (strength - 3.0) * w
 
 
-def score_players(players: dict[int, Player], season_started: bool) -> None:
+# How hard to favour the stronger side of a fixture (top team vs bottom team).
+# Applied to the strength GAP between a player's team and its opponent. Raise for
+# a more decisive top-team lean, lower/zero to rely on FDR alone.
+MISMATCH_WEIGHT = 0.10
+
+
+def _mismatch_multiplier(team_strength: float, opp_strength: float) -> float:
+    """Boost players from the stronger team in a lopsided fixture, penalise the
+    weaker team's players. Gap is clamped to [-3, 3] on the 1..5 strength scale."""
+    gap = max(-3.0, min(3.0, team_strength - opp_strength))
+    return 1.0 + gap * MISMATCH_WEIGHT
+
+
+def score_players(players: dict[int, Player], season_started: bool,
+                  games_played: int = 0) -> None:
     """Compute ``projected`` points for each player for the horizon.
 
     Combines: scoring baseline (ep_next / ppg / form) x fixture difficulty x
@@ -207,25 +246,30 @@ def score_players(players: dict[int, Player], season_started: bool) -> None:
     heart of it — the game is about picking players who START.
     """
     for p in players.values():
-        if season_started and p.form > 0:
+        # Early season the current-season form/ppg are 1-game noise (and 0 for
+        # teams yet to play), so lean on FPL's forward-looking ep_next; once ~4+
+        # games are in, blend in live form and points-per-game.
+        if games_played >= 4:
             base = 0.45 * p.ep_next + 0.30 * p.form + 0.25 * p.ppg
         else:
-            base = 0.60 * p.ep_next + 0.40 * p.ppg
+            base = 0.80 * p.ep_next + 0.20 * p.ppg
 
         fdr_mult = _fdr_multiplier(p.fdr)
         team_mult = _team_multiplier(p.pos, p.team_strength)
+        mismatch_mult = _mismatch_multiplier(p.team_strength, p.opp_strength)
         avail = _availability_mult(p.status, p.chance)
 
         # Start probability: use a human/Grok override when present, otherwise
         # derive it from last-season minutes/starts.
         if not p.override_reason:
-            p.start_prob = _minutes_security(p.minutes, p.starts)
+            p.start_prob = _minutes_security(p.minutes, p.starts, games_played,
+                                             p.status, p.chance)
         # Playing chance is capped by BOTH availability (injury/suspension from
         # the API) and start probability (rotation). An injured player (avail 0)
         # or a flagged-out player (start_prob 0) scores nothing.
         play = min(avail, p.start_prob)
 
-        per_match = base * fdr_mult * team_mult * play
+        per_match = base * fdr_mult * team_mult * mismatch_mult * play
         p.projected = round(per_match * max(p.n_fix, 1), 2)
 
         p.reasons = []
@@ -246,6 +290,11 @@ def score_players(players: dict[int, Player], season_started: bool) -> None:
             p.reasons.append("easy fixture")
         elif p.fdr >= 4.0:
             p.reasons.append("hard fixture")
+        gap = p.team_strength - p.opp_strength
+        if gap >= 1.5:
+            p.reasons.append("favourable matchup")
+        elif gap <= -1.5:
+            p.reasons.append("tough matchup")
         if p.team_strength >= 4.2:
             p.reasons.append("strong team")
         if p.n_fix >= 2:

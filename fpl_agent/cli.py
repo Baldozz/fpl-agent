@@ -114,21 +114,37 @@ def main(argv: list[str] | None = None) -> int:
 
     fixtures = api.fixtures(use_cache=not args.no_cache)
     players = model.build_players(boot)
-    model.attach_fixtures(players, fixtures, gw, args.horizon)
+    strength = model.team_strength_map(boot)
+    model.attach_fixtures(players, fixtures, gw, args.horizon, strength)
 
-    # Start-probability signals: file overrides first, then live Grok (X) on top.
-    signals = load_overrides()
+    # Fetch RSS once; used both to drive selection (parse_start_signals) and for
+    # display (relevant_headlines) later.
+    all_headlines: list[news.Headline] = []
+    if not args.no_news:
+        all_headlines = news.fetch_headlines()
+
+    # Start-probability signals, layered lowest -> highest confidence:
+    #   RSS (heuristic, negative-only) < file overrides < Grok (X).
+    # merge(base, extra): extra wins unless the base entry is pinned, so a pinned
+    # manual override always wins.
+    rss_sig = news.parse_start_signals(
+        all_headlines, {p.name for p in players.values()}) if all_headlines else {}
+    signals = merge(rss_sig, load_overrides())      # file overrides beat RSS
     grok_used = False
     grok_bullets: list[dict] = []
     if not args.no_grok and grok.available():
         team_names = [t["name"] for t in boot["teams"]]
         gsig, grok_bullets = grok.analyse(team_names, gw)
         if gsig:
-            signals = merge(signals, gsig)
+            signals = merge(signals, gsig)          # Grok beats RSS + unpinned file
             grok_used = True
     model.apply_start_signals(players, signals)
+    rss_used = sum(1 for s in signals.values() if s.get("source") == "rss")
+    if rss_used:
+        print(f"[rss] {rss_used} start-prob signals from RSS headlines")
 
-    model.score_players(players, season_started)
+    games_played = sum(1 for e in boot["events"] if e.get("finished"))
+    model.score_players(players, season_started, games_played)
 
     if args.formation.strip().lower() == "free":
         formation = None
@@ -159,11 +175,10 @@ def main(argv: list[str] | None = None) -> int:
     squad = build_squad(list(players.values()), formation, must_ids)
 
     headlines: list[news.Headline] = []
-    if not args.no_news:
+    if all_headlines:
         names = {p.name for p in squad.squad}
         team_full = {t["name"] for t in boot["teams"]}
-        headlines = news.relevant_headlines(
-            news.fetch_headlines(), names, team_full)
+        headlines = news.relevant_headlines(all_headlines, names, team_full)
     for b in grok_bullets:
         title = b["title"] + (f" — {b['detail']}" if b.get("detail") else "")
         headlines.insert(0, news.Headline(
@@ -172,7 +187,8 @@ def main(argv: list[str] | None = None) -> int:
     sources = [
         "Fantasy Premier League public API "
         "(bootstrap-static, fixtures) — https://fantasy.premierleague.com/api/",
-        "Free RSS: BBC Sport, The Guardian, Sky Sports (team news / injuries)",
+        "Free RSS: BBC Sport, The Guardian (team news / injuries — parsed into "
+        "start-probability signals as well as shown)",
         ("xAI Grok live search over X/Twitter (predicted line-ups, rotation, "
          "injuries)" + ("" if grok_used else " — NOT USED this run: "
                         "no XAI_API_KEY/credits, using overrides + RSS")),

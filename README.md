@@ -26,6 +26,9 @@ Markdown report for every gameweek into [`reports/`](reports/).
   - **Fixture difficulty** over a configurable horizon (double-gameweek aware)
   - **Own-team strength** — an Arsenal defender keeps more clean sheets than a
     promoted-side defender, so team quality boosts CS (GK/DEF) and attack (MID/FWD)
+  - **Fixture mismatch** — the strength *gap* between the two teams in a fixture,
+    so in a top-vs-bottom game the stronger side's players are decisively favoured
+    (tunable via `MISMATCH_WEIGHT`; stacks with FDR for a ~3× top/bottom swing)
   - **Probability of actually starting** — a last-season minutes/starts model,
     because the game is about picking players who *play*. This is overridden by
     injury news and by human/Grok signals (see below).
@@ -109,7 +112,12 @@ mechanisms handle this:
    matched by player name. `start_prob`: `0` = won't play, `0.5` = rotation
    risk / 50-50, `1` = nailed. Example already in the file: Mukiele ruled out,
    Guéhi flagged as a World-Cup-return rotation risk.
-2. **Grok (xAI) over live X/Twitter** — most team news breaks on X first. With an
+2. **Free RSS (BBC/Guardian)** — headline **titles** are parsed for injury/
+   availability phrases ("ruled out", "a major doubt") and, when they name one of
+   your players, lower that player's start probability so he drops out of the
+   squad. Negative-only and title-only for precision; lowest precedence (Grok and
+   manual overrides always win).
+3. **Grok (xAI) over live X/Twitter** — most team news breaks on X first. With an
    `XAI_API_KEY` that has credits, the agent calls xAI's **Responses API** with
    the server-side **`x_search`** tool, so Grok reads *live* X posts (last few
    days) for predicted line-ups / rotation / injuries and returns
