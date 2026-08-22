@@ -33,12 +33,8 @@ jobs:
 
       - name: Recommendation report (markdown) for the upcoming GW
         run: python -m fpl_agent --horizon 3 --save --no-grok || echo "skipped"
-      - name: Dashboard page (tracker + recommendation + transfers)
-        run: python -m fpl_agent --dashboard --html --no-grok || echo "skipped"
-      - name: Live team page (actual squad + live scores)
-        run: python -m fpl_agent --live --html || echo "skipped"
-      - name: Varsical league page
-        run: python -m fpl_agent --league --html --no-grok || echo "skipped"
+      - name: Unified site (Dashboard + My Team + League) -> docs/index.html
+        run: python -m fpl_agent --site --html --no-grok || echo "skipped"
 
       - name: Pre-deadline WhatsApp plan (fires only within the 2h window)
         run: python -m fpl_agent.notify --mode deadline || echo "skipped"

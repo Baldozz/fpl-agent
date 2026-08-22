@@ -40,10 +40,13 @@ for account automation (which needs their credentials and carries account risk).
 | `notify.py` | WhatsApp: `--mode deadline` (2h window) and `--mode monitor` (injury watch, deduped via `state/alerts.json`). |
 
 ## Pages / CLI modes
-`--dashboard` → `docs/index.html` (tracker + recommendation + transfers);
-`--live` → `docs/live.html`; `--league` → `docs/league.html`; default (no mode)
-→ the from-scratch recommendation report/page. Team id: `FPL_TEAM_ID` / `--team-id`
-/ `~/.fpl-mcp`. League id: `FPL_LEAGUE_ID` / `--league-id` (Varsical = 1739086).
+**`--site` → `docs/index.html`** is the primary deliverable: ONE tabbed page
+(Dashboard | My Team | League) via `render_site`, which composes the three body
+fragments (`render_dashboard_html/‑league_html/‑live_html` all take
+`full_document=False`/`embed=True`). The GW switcher toggles embedded `.gwpane`
+divs client-side (no per-GW files). Standalone `--dashboard/--live/--league`
+still exist. Team id: `FPL_TEAM_ID` / `--team-id` / `~/.fpl-mcp`. League id:
+`FPL_LEAGUE_ID` / `--league-id` (Varsical = 1739086).
 
 **Privacy:** the league page exposes rivals' teams and the repo/Pages site is
 public — if that matters, make the repo private (Pages still works).

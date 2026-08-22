@@ -21,7 +21,7 @@ from pathlib import Path
 
 from . import agent, api, grok, league, live, model, news
 from .html_report import (render_dashboard_html, render_html, render_league_html,
-                          render_live_html)
+                          render_live_html, render_site)
 from .optimizer import build_squad
 from .overrides import load_must_include, load_overrides, merge
 from .report import render
@@ -50,6 +50,50 @@ def _prepare_players(args, boot, gw, season_started):
         boot, gw, season_started, horizon=args.horizon,
         use_grok=not args.no_grok, use_news=not args.no_news,
         use_cache=not args.no_cache)
+
+
+def _run_site(args, boot, cur, nxt, gw, season_started) -> int:
+    """One unified page: Dashboard + My Team (live, GW switcher) + League tabs."""
+    team_id = live.resolve_team_id(args.team_id)
+    if not team_id:
+        print("No team id for --site (set FPL_TEAM_ID / ~/.fpl-mcp).")
+        return 1
+    players, all_headlines, _, _ = _prepare_players(args, boot, gw, season_started)
+    current_gw = (cur or nxt)["id"]
+    deadline = nxt["deadline_time"]
+
+    available = sorted({e["id"] for e in boot["events"]
+                        if e.get("finished") or e.get("is_current")} | {current_gw})
+    live_by_gw = {}
+    for g in available:
+        try:
+            live_by_gw[g] = live.fetch_live_team(team_id, g, boot)
+        except Exception as e:
+            print(f"[site] GW{g} live skipped: {e}")
+
+    league_id = args.league_id or _resolve_league_id()
+    d = agent.build_digest(team_id, boot, players, current_gw, gw, deadline,
+                           league_id, args.free_transfers)
+    lg = None
+    if league_id:
+        try:
+            lg = league.fetch_league(league_id, current_gw, boot, with_teams=True)
+        except Exception as e:
+            print(f"[site] league skipped: {e}")
+    if lg is None:
+        lg = league.League(league_id=league_id or 0, name="League", gw=current_gw)
+
+    headlines = (news.relevant_headlines(
+        all_headlines, {p.name for p in d.current},
+        {t["name"] for t in boot["teams"]}) if all_headlines else [])
+    page = render_site(d, live_by_gw, lg, headlines, available, current_gw, deadline)
+    print(f"Unified site: GW{gw} plan (C {d.captain.name if d.captain else '—'}), "
+          f"{len(available)} live GW(s), league '{lg.name}' ({len(lg.rows)})")
+    if args.html or args.save:
+        DOCS.mkdir(exist_ok=True)
+        (DOCS / "index.html").write_text(page)
+        print(f"[written] {DOCS/'index.html'} (unified site)")
+    return 0
 
 
 def _run_dashboard(args, boot, cur, nxt, gw, season_started) -> int:
@@ -168,9 +212,12 @@ def main(argv: list[str] | None = None) -> int:
                          "(not the recommendation)")
     ap.add_argument("--team-id", type=int, default=None,
                     help="FPL team id (else env FPL_TEAM_ID / ~/.fpl-mcp/config.json)")
+    ap.add_argument("--site", action="store_true",
+                    help="ONE unified page (Dashboard + My Team + League tabs) "
+                         "→ docs/index.html")
     ap.add_argument("--dashboard", action="store_true",
-                    help="previous-GW tracker + upcoming recommendation + transfers "
-                         "for YOUR team (writes docs/index.html)")
+                    help="standalone dashboard page (tracker + recommendation + "
+                         "transfers)")
     ap.add_argument("--league", action="store_true",
                     help="Varsical league monitor page (writes docs/league.html)")
     ap.add_argument("--league-id", type=int, default=None,
@@ -188,6 +235,8 @@ def main(argv: list[str] | None = None) -> int:
     season_started = cur is not None and cur.get("finished") is not None \
         and any(e.get("finished") for e in boot["events"])
 
+    if args.site:
+        return _run_site(args, boot, cur, nxt, gw, season_started)
     if args.live:
         return _run_live(args, boot, cur, nxt)
     if args.league:

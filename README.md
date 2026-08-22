@@ -57,17 +57,22 @@ Markdown report for every gameweek into [`reports/`](reports/).
 - **Publishes a report** per gameweek to `reports/GW<n>.md`, committed to GitHub
   so there's a running history of every recommendation.
 
-## 🗂️ Pages the agent publishes
+## 🗂️ One unified page (`--site` → `docs/index.html`)
 
-| Page | Command | What it shows |
-|------|---------|---------------|
-| **Dashboard** (`docs/index.html`) | `--dashboard` | Previous-GW **tracker** (points, rank, captain, bench, chips) + **upcoming-GW recommendation**: captain, **transfer plan** (out→in with point gain), flagged players in your squad, and opportunities you don't own |
-| **Live** (`docs/live.html`) | `--live` | Your actual entered team with **live GW scores** |
-| **Varsical league** (`docs/league.html`) | `--league` | Standings for your private league (id `1739086`) with every rival's **captain, formation, GW & total points** |
+Everything lives on a **single tabbed page** at
+**https://baldozz.github.io/fpl-agent/**:
+
+- **📋 Dashboard** — previous-GW **tracker** (points, rank, captain, bench, chips)
+  + **upcoming-GW recommendation**: captain, **transfer plan** (out→in with point
+  gain), flagged players, and opportunities you don't own.
+- **⚽ My Team** — your actual team with **live GW scores** in the FPL layout
+  (kit shirts on the pitch) and a **gameweek dropdown** to switch weeks.
+- **🏆 Varsical** — league standings (id `1739086`) with every rival's captain,
+  formation and points; your row highlighted.
 
 ```bash
-python3 -m fpl_agent --dashboard --html    # writes docs/index.html
-python3 -m fpl_agent --league --html        # writes docs/league.html
+python3 -m fpl_agent --site --html          # the unified page (default deliverable)
+# standalone variants also exist: --dashboard, --live, --league
 ```
 
 ## 🔁 Transfer recommender

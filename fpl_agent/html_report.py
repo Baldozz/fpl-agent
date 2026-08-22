@@ -390,7 +390,8 @@ def _doc(title: str, body: str, css_extra: str = "", js: str = "") -> str:
 <body><div class="wrap">{body}</div><script>{js}</script></body></html>"""
 
 
-def render_dashboard_html(d, headlines: list[Headline] | None = None) -> str:
+def render_dashboard_html(d, headlines: list[Headline] | None = None,
+                          full_document: bool = True) -> str:
     """Previous-GW tracker + upcoming-GW recommendation + transfer plan."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     lg = (f"{d.league_name} #{d.league_rank}" if d.league_rank else "—")
@@ -429,6 +430,9 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None) -> str:
     vice = f'{_esc(d.vice.name)}' if d.vice else "—"
     news_html = (f'<div class="card"><h3>Team news</h3>{_news(headlines)}</div>'
                  if headlines else "")
+    nav = ('<div class="btnrow"><a class="btn" href="./live.html">▶ Live scores</a>'
+           '<a class="btn" href="./league.html">🏆 Varsical league</a></div>'
+           if full_document else "")
 
     body = f"""
     <header class="hero">
@@ -448,10 +452,7 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None) -> str:
       <div class="stat"><div class="k">Varsical</div><div class="v tnum">{('#'+str(d.league_rank)) if d.league_rank else '—'}</div></div>
       <div class="stat"><div class="k">In the bank</div><div class="v tnum">£{d.bank/10:.1f}m</div></div>
     </section>
-    <div class="btnrow">
-      <a class="btn" href="./live.html">▶ Live scores</a>
-      <a class="btn" href="./league.html">🏆 Varsical league</a>
-    </div>
+    {nav}
     <div class="grid2">
       <div class="card"><h3>⭐ Recommended captain</h3>
         <p style="font-size:18px;margin:.2em 0">{cap}</p>
@@ -472,10 +473,12 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None) -> str:
     <footer><div>Built by the FPL Agent · <a href="https://github.com/Baldozz/fpl-agent">source</a></div>
     <div class="disc">Transfer suggestions use projected points and now-cost as sell price —
     confirm on the FPL site before committing.</div></footer>"""
+    if not full_document:
+        return body
     return _doc(f"FPL Plan — GW{d.upcoming_gw}", body, DASH_CSS, JS)
 
 
-def render_league_html(league) -> str:
+def render_league_html(league, full_document: bool = True) -> str:
     """Varsical standings + each rival's captain / GW points / formation."""
     def fmt(team):
         if not team:
@@ -498,26 +501,35 @@ def render_league_html(league) -> str:
                  f'<td>{_esc(cap)}</td><td>{_esc(fmt(r.team))}</td>'
                  f'<td class="n">{r.gw_points}</td><td class="n"><b>{r.total}</b></td>'
                  f'<td>{_esc(chip)}</td></tr>')
+    nav = ('<div class="btnrow"><a class="btn" href="./index.html">← Dashboard</a>'
+           '<a class="btn" href="./live.html">▶ My live team</a></div>'
+           if full_document else "")
     body = f"""
     <header class="hero"><div>
       <div class="gw">Gameweek {league.gw} · League</div>
       <h1>{_esc(league.name)}</h1>
       <div class="sub">{len(league.rows)} managers · live captains &amp; scores</div>
     </div></header>
-    <div class="btnrow"><a class="btn" href="./index.html">← Dashboard</a>
-      <a class="btn" href="./live.html">▶ My live team</a></div>
+    {nav}
     <div class="card" style="overflow-x:auto">
       <table><tr><th class="n">#</th><th></th><th>Manager / Team</th>
       <th>Captain (GW{league.gw})</th><th>Form.</th><th class="n">GW</th>
       <th class="n">Total</th><th>Chip</th></tr>{rows}</table></div>
     <footer><div>Live from the FPL API · <a href="https://github.com/Baldozz/fpl-agent">source</a></div></footer>"""
+    if not full_document:
+        return body
     return _doc(f"{league.name} — GW{league.gw}", body, DASH_CSS)
 
 
 def render_live_html(team, gw: int, deadline: str,
                      headlines: list[Headline], full_document: bool = True,
-                     available_gws: list[int] | None = None) -> str:
-    """Render the manager's ACTUAL team with LIVE gameweek scores (FPL layout)."""
+                     available_gws: list[int] | None = None,
+                     embed: bool = False) -> str:
+    """Render the manager's ACTUAL team with LIVE gameweek scores (FPL layout).
+
+    ``embed=True`` returns just the inner content (no page chrome / own dropdown)
+    for composing into the unified single-page site.
+    """
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
 
     def line(pos):
@@ -532,7 +544,7 @@ def render_live_html(team, gw: int, deadline: str,
     rank = f"{team.overall_rank:,}" if team.overall_rank else "—"
 
     gwsel = ""
-    if available_gws:
+    if available_gws and not embed:
         opts = "".join(
             f'<option value="live-gw{g}.html"{" selected" if g == gw else ""}>'
             f'Gameweek {g}</option>' for g in available_gws)
@@ -593,6 +605,8 @@ def render_live_html(team, gw: int, deadline: str,
       <div class="disc">Live scores update as matches are played; provisional
         until the gameweek is finalised (bonus points, auto-subs).</div>
     </footer>"""
+    if embed:
+        return content
     css_extra = LIVE_CSS + DASH_CSS
     body = f'<div class="wrap">{content}</div>'
     if not full_document:
@@ -609,6 +623,75 @@ def render_live_html(team, gw: int, deadline: str,
 {body}
 </body>
 </html>"""
+
+
+SITE_CSS = """
+.tabs{display:flex;gap:4px;margin:18px 0 6px;border-bottom:2px solid var(--line);flex-wrap:wrap}
+.tab{padding:10px 18px;font:inherit;font-weight:800;cursor:pointer;border:none;
+  background:none;color:var(--muted);border-bottom:3px solid transparent;
+  margin-bottom:-2px;font-size:15px}
+.tab:hover{color:var(--ink)}
+.tab.active{color:var(--ink);border-bottom-color:var(--green)}
+.pane{display:none} .pane.active{display:block}
+.gwpane{display:none} .gwpane.active{display:block}
+.pane>.hero:first-child{margin-top:4px}
+"""
+
+SITE_JS = """
+function showTab(id){
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('active',p.id===id);});
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.pane===id);});
+  if(history.replaceState)history.replaceState(null,'',location.pathname+'#'+id.replace('tab-',''));
+}
+document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){showTab(t.dataset.pane);};});
+var gsel=document.getElementById('gwsel');
+if(gsel)gsel.onchange=function(){
+  document.querySelectorAll('.gwpane').forEach(function(p){p.classList.toggle('active',p.dataset.gw===gsel.value);});
+};
+(function(){var h=(location.hash||'').slice(1);var id='tab-'+h;
+  if(h&&document.getElementById(id))showTab(id);})();
+"""
+
+
+def render_site(d, live_by_gw: dict, league, headlines, available_gws: list[int],
+                current_gw: int, deadline: str) -> str:
+    """One tabbed page: Dashboard | My Team (live, GW switcher) | League."""
+    dash = render_dashboard_html(d, headlines, full_document=False)
+    lg = render_league_html(league, full_document=False)
+
+    gws = sorted(available_gws)
+    opts = "".join(f'<option value="{g}"{" selected" if g==current_gw else ""}>'
+                   f'Gameweek {g}</option>' for g in gws)
+    panes = ""
+    for g in gws:
+        team = live_by_gw.get(g)
+        if not team:
+            continue
+        inner = render_live_html(team, g, deadline, [], embed=True)
+        active = " active" if g == current_gw else ""
+        panes += f'<div class="gwpane{active}" data-gw="{g}">{inner}</div>'
+    team_tab = (f'<div class="gwbar"><label for="gwsel">View gameweek:</label>'
+                f'<select id="gwsel" class="gwsel">{opts}</select></div>{panes}')
+
+    tabs = (
+        '<div class="tabs">'
+        '<button class="tab active" data-pane="tab-dash">📋 Dashboard</button>'
+        '<button class="tab" data-pane="tab-team">⚽ My Team</button>'
+        '<button class="tab" data-pane="tab-league">🏆 Varsical</button></div>')
+    body = (
+        f'<div class="wrap">{tabs}'
+        f'<div id="tab-dash" class="pane active">{dash}</div>'
+        f'<div id="tab-team" class="pane">{team_tab}</div>'
+        f'<div id="tab-league" class="pane">{lg}</div>'
+        f'</div>')
+    css = CSS + DASH_CSS + LIVE_CSS + SITE_CSS
+    js = JS + SITE_JS
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FPL Agent — {_esc(d.entry_name or 'My Team')}</title>
+<style>{css}</style></head>
+<body>{body}<script>{js}</script></body></html>"""
 
 
 def render_html(squad: Squad, gw: int, deadline: str, season_started: bool,
