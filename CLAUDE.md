@@ -31,7 +31,8 @@ for account automation (which needs their credentials and carries account risk).
 | `news.py` | Free Premier League RSS feeds → headlines relevant to the squad / injuries. |
 | `grok.py` | xAI **Responses API** (`/v1/responses`) with server-side `x_search` → live-X start-probability signals + headlines. Optional; needs `XAI_API_KEY` + credits. NB: the old chat-completions `search_parameters` live-search is deprecated (410); `_extract_message` reads the `output[]` item whose `type=="message"`. |
 | `overrides.py` + `overrides.json` | Human/Grok start-probability overrides the FPL API lacks. |
-| `report.py` / `html_report.py` | Markdown report / standalone HTML page (GitHub Pages). |
+| `report.py` / `html_report.py` | Markdown report / standalone HTML page. `html_report.render_html` = pre-deadline recommendation; `render_live_html` = live actual-team scoreboard. |
+| `live.py` | Fetch the manager's ACTUAL entered team (`entry/{id}/event/{gw}/picks/`) + LIVE points (`event/{gw}/live/`). Public endpoints, no auth. Team id via `--team-id`, `FPL_TEAM_ID`, or `~/.fpl-mcp/config.json`. |
 | `notify.py` | Free WhatsApp deadline reminder via CallMeBot. |
 | `cli.py` / `__main__.py` | `python -m fpl_agent` entry point. |
 

@@ -298,6 +298,111 @@ def _body(squad: Squad, gw: int, deadline: str, season_started: bool,
   </div>"""
 
 
+def _live_card(p, captain_mult: int) -> str:
+    badge = ""
+    if p.is_captain:
+        badge = f'<span class="arm c" title="Captain">C</span>'
+    elif p.is_vice:
+        badge = '<span class="arm v" title="Vice-captain">V</span>'
+    net = p.points * (p.multiplier or 1)
+    # dim players whose match hasn't started; highlight the live score
+    cls = "player" + (" cap" if p.is_captain else "")
+    dim = "" if p.started_fixture else ' style="opacity:.55"'
+    capx = f' <span class="capx">×{p.multiplier}</span>' if p.multiplier > 1 else ""
+    return f"""
+      <div class="{cls}"{dim}>
+        <div class="shirt" data-pos="{p.pos}">{badge}</div>
+        <div class="pname">{_esc(p.name)}</div>
+        <div class="pmeta"><span>{_esc(p.team_name)}</span>
+          <span class="proj">{net}{capx}</span></div>
+        <div class="pprice">{p.minutes}'</div>
+      </div>"""
+
+
+def render_live_html(team, gw: int, deadline: str,
+                     headlines: list[Headline], full_document: bool = True) -> str:
+    """Render the manager's ACTUAL team with LIVE gameweek scores."""
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+
+    def line(pos):
+        cards = "".join(_live_card(p, team.captain.multiplier if team.captain else 2)
+                        for p in sorted([q for q in team.xi if q.pos == pos],
+                                        key=lambda z: -z.net_points))
+        return f'<div class="line">{cards}</div>'
+    pitch = f'<div class="pitch">{"".join(line(pos) for pos,_ in POS_ROWS)}</div>'
+    bench = "".join(_live_card(p, 1) for p in team.bench)
+    played = sum(1 for p in team.xi if p.started_fixture)
+    chip = f' · chip: {team.active_chip}' if team.active_chip else ""
+    rank = f"{team.overall_rank:,}" if team.overall_rank else "—"
+    content = f"""
+    <header class="hero">
+      <div>
+        <div class="gw">Gameweek {gw} · Live</div>
+        <h1>{_esc(team.entry_name or 'My Team')}</h1>
+        <div class="sub">{_esc(team.manager_name)} · updated {now}{chip}</div>
+      </div>
+      <div class="countdown">
+        <div class="big tnum">{team.total_points}</div>
+        <div class="lbl">GW{gw} points</div>
+      </div>
+    </header>
+
+    <section class="stats">
+      <div class="stat"><div class="k">GW points</div>
+        <div class="v tnum">{team.total_points}</div></div>
+      <div class="stat"><div class="k">On bench</div>
+        <div class="v tnum">{team.bench_points}</div></div>
+      <div class="stat"><div class="k">Overall rank</div>
+        <div class="v tnum">{rank}</div></div>
+      <div class="stat"><div class="k">XI played</div>
+        <div class="v tnum">{played}/11</div></div>
+    </section>
+
+    <div class="captain">
+      <span class="arm c">C</span>
+      <div class="txt">
+        <div class="role">Captain (×{team.captain.multiplier if team.captain else 2})</div>
+        <div class="who">{_esc(team.captain.name) if team.captain else '—'}
+          <span class="muted tnum" style="font-size:15px">
+          {(team.captain.net_points if team.captain else 0)} pts live</span></div>
+      </div>
+      <div class="vice">Vice<br><b>{_esc(team.vice.name) if team.vice else '—'}</b></div>
+    </div>
+
+    <h2 class="sec">Starting XI — live points</h2>
+    {pitch}
+    <h2 class="sec">Bench</h2>
+    <div class="bench-row">{bench}</div>
+"""
+    if headlines:
+        content += ('<h2 class="sec">Team news — live from X &amp; RSS</h2>'
+                    + _news(headlines))
+    content += """
+    <footer>
+      <div>Live from the FPL API · <a
+        href="https://github.com/Baldozz/fpl-agent">source on GitHub</a></div>
+      <div class="disc">Live scores update as matches are played; provisional
+        until the gameweek is finalised (bonus points, auto-subs).</div>
+    </footer>"""
+    css_extra = ".capx{color:var(--magenta);font-weight:800}"
+    body = f'<div class="wrap">{content}</div>'
+    if not full_document:
+        return f"<style>{CSS}{css_extra}</style>{body}"
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FPL Live — GW{gw} · {_esc(team.entry_name or 'My Team')}</title>
+<style>{CSS}{css_extra}</style>
+</head>
+<body>
+{body}
+</body>
+</html>"""
+
+
 def render_html(squad: Squad, gw: int, deadline: str, season_started: bool,
                 headlines: list[Headline], full_document: bool = True) -> str:
     body = _body(squad, gw, deadline, season_started, headlines)

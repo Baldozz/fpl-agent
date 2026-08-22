@@ -19,8 +19,8 @@ import argparse
 import os
 from pathlib import Path
 
-from . import api, grok, model, news
-from .html_report import render_html
+from . import api, grok, live, model, news
+from .html_report import render_html, render_live_html
 from .optimizer import build_squad
 from .overrides import load_must_include, load_overrides, merge
 from .report import render
@@ -43,6 +43,36 @@ def _load_dotenv() -> None:
         os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
 
+def _run_live(args, boot, cur, nxt) -> int:
+    """Render the user's actual entered team + live gameweek scores."""
+    team_id = live.resolve_team_id(args.team_id)
+    if not team_id:
+        print("No team id. Pass --team-id N, set FPL_TEAM_ID, or configure "
+              "~/.fpl-mcp/config.json.")
+        return 1
+    gw = (cur or nxt)["id"]
+    team = live.fetch_live_team(team_id, gw, boot)
+
+    headlines: list[news.Headline] = []
+    if not args.no_news:
+        names = {p.name for p in team.xi + team.bench}
+        team_full = {t["name"] for t in boot["teams"]}
+        headlines = news.relevant_headlines(
+            news.fetch_headlines(), names, team_full)
+
+    page = render_live_html(team, gw, (cur or nxt)["deadline_time"], headlines)
+    print(f"GW{gw} live: {team.entry_name} — {team.total_points} pts "
+          f"(C: {team.captain.name if team.captain else '—'}), "
+          f"rank {team.overall_rank:,}" if team.overall_rank else
+          f"GW{gw} live: {team.total_points} pts")
+    if args.html or args.save:
+        DOCS.mkdir(exist_ok=True)
+        (DOCS / "index.html").write_text(page)
+        (DOCS / f"GW{gw:02d}-live.html").write_text(page)
+        print(f"[written] {DOCS/'index.html'} (live)")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     _load_dotenv()
     ap = argparse.ArgumentParser(prog="fpl_agent")
@@ -62,6 +92,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--include", default="",
                     help="comma-separated player names to force into the squad "
                          "(added to must_include in overrides.json)")
+    ap.add_argument("--live", action="store_true",
+                    help="show YOUR actual entered team + live gameweek scores "
+                         "(not the recommendation)")
+    ap.add_argument("--team-id", type=int, default=None,
+                    help="FPL team id for --live (else env FPL_TEAM_ID / "
+                         "~/.fpl-mcp/config.json)")
     args = ap.parse_args(argv)
 
     boot = api.bootstrap(use_cache=not args.no_cache)
@@ -72,6 +108,9 @@ def main(argv: list[str] | None = None) -> int:
     gw = nxt["id"]
     season_started = cur is not None and cur.get("finished") is not None \
         and any(e.get("finished") for e in boot["events"])
+
+    if args.live:
+        return _run_live(args, boot, cur, nxt)
 
     fixtures = api.fixtures(use_cache=not args.no_cache)
     players = model.build_players(boot)

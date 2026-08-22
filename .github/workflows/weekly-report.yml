@@ -4,8 +4,11 @@ name: Weekly FPL report
 # Adjust the cron to taste; times are UTC. Also runnable on demand.
 on:
   schedule:
-    - cron: "0 9 * * 4"   # Thursday 09:00 UTC
-    - cron: "0 9 * * 5"   # Friday 09:00 UTC
+    - cron: "0 9 * * 4"        # Thu 09:00 UTC — recommendation before deadline
+    - cron: "0 9 * * 5"        # Fri 09:00 UTC — recommendation before deadline
+    - cron: "0 13,16,19 * * 6" # Sat — refresh LIVE scores during matches
+    - cron: "0 14,16,19 * * 0" # Sun — refresh LIVE scores during matches
+    - cron: "0 20 * * 1"       # Mon 20:00 UTC — refresh LIVE (Monday games)
   workflow_dispatch:
 
 permissions:
@@ -20,8 +23,12 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt
-      - name: Generate report + HTML page
-        run: python -m fpl_agent --horizon 3 --save --html
+      - name: Generate recommendation report (markdown) for the upcoming GW
+        run: python -m fpl_agent --horizon 3 --save
+      - name: Publish LIVE team page (your actual squad + live scores)
+        env:
+          FPL_TEAM_ID: ${{ vars.FPL_TEAM_ID }}
+        run: python -m fpl_agent --live --html || echo "live page skipped"
       - name: Send WhatsApp reminder (no-op unless secrets are set)
         env:
           WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}

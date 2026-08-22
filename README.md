@@ -63,12 +63,20 @@ publishes at:
 
 **https://baldozz.github.io/fpl-agent/**
 
-The weekly GitHub Action regenerates it before each deadline, so the page always
-shows the current gameweek's recommendation.
+During the season the page shows your **actual entered team with LIVE gameweek
+scores** (real captain, live points, rank), refreshed by the Action on match
+days. Before deadlines the agent also produces the *recommendation* for the
+upcoming GW (markdown in `reports/`).
 
 ```bash
-python3 -m fpl_agent --html        # writes docs/index.html + docs/GW<n>.html
+python3 -m fpl_agent --html                 # recommendation page (pre-deadline)
+python3 -m fpl_agent --live --html          # YOUR real team + live scores
+python3 -m fpl_agent --live --team-id 8799067   # explicit team id
 ```
+
+The **recommendation** (`--html`) is a forecast/pick; the **live** view
+(`--live`) reads your real squad and live points from the FPL API — use that
+during a gameweek so the page matches the official FPL site (captain, scores).
 
 ## 🔔 WhatsApp deadline reminder (free)
 
