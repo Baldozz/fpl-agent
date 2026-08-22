@@ -87,6 +87,51 @@ def _get(url: str):
     return r.json()
 
 
+@dataclass
+class GWHistory:
+    gw: int
+    points: int
+    bench_points: int
+    overall_rank: int | None
+    gw_rank: int | None
+    transfers: int
+    transfer_cost: int
+    captain: str = ""
+    chip: str | None = None
+
+
+def fetch_history(team_id: int, bootstrap: dict) -> list[GWHistory]:
+    """Per-gameweek season history for the previous-GW tracker."""
+    data = _get(f"{BASE}/entry/{team_id}/history/")
+    chip_by_gw = {c["event"]: c["name"] for c in data.get("chips", [])}
+    name = {e["id"]: e["web_name"] for e in bootstrap["elements"]}
+    rows: list[GWHistory] = []
+    for r in data.get("current", []):
+        gw = r["event"]
+        cap = ""
+        try:
+            picks = _get(f"{BASE}/entry/{team_id}/event/{gw}/picks/")
+            cid = next((p["element"] for p in picks["picks"] if p["is_captain"]), None)
+            cap = name.get(cid, "")
+        except Exception:
+            pass
+        rows.append(GWHistory(
+            gw=gw, points=r["points"], bench_points=r["points_on_bench"],
+            overall_rank=r.get("overall_rank"), gw_rank=r.get("rank"),
+            transfers=r["event_transfers"], transfer_cost=r["event_transfers_cost"],
+            captain=cap, chip=chip_by_gw.get(gw),
+        ))
+    return rows
+
+
+def fetch_squad_ids(team_id: int, gw: int) -> tuple[list[int], int]:
+    """Return (element ids of the current 15, bank in tenths) from latest picks."""
+    picks = _get(f"{BASE}/entry/{team_id}/event/{gw}/picks/")
+    ids = [p["element"] for p in picks["picks"]]
+    bank = (picks.get("entry_history", {}) or {}).get("bank", 0)
+    return ids, bank
+
+
 def fetch_live_team(team_id: int, gw: int, bootstrap: dict) -> LiveTeam:
     elements = {e["id"]: e for e in bootstrap["elements"]}
     team_short = {t["id"]: t["short_name"] for t in bootstrap["teams"]}

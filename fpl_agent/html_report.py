@@ -319,6 +319,163 @@ def _live_card(p, captain_mult: int) -> str:
       </div>"""
 
 
+DASH_CSS = """
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.card h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+.move{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700}
+.out{background:rgba(233,0,82,.14);color:var(--magenta)}
+.in{background:rgba(0,176,106,.16);color:var(--green)}
+.gain{margin-left:auto;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums}
+.flag-list span{display:inline-block;background:rgba(242,169,0,.16);color:#8a6a00;
+  padding:3px 9px;border-radius:20px;font-size:12px;margin:2px 4px 2px 0}
+.hold{color:var(--green);font-weight:700}
+.me{background:rgba(0,176,106,.10)}
+.mv-up{color:var(--green)} .mv-dn{color:var(--magenta)} .mv-eq{color:var(--muted)}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 4px}
+.btn{display:inline-block;padding:8px 14px;border-radius:10px;border:1px solid var(--line);
+  text-decoration:none;color:var(--ink);font-weight:600;font-size:13px}
+"""
+
+
+def _doc(title: str, body: str, css_extra: str = "", js: str = "") -> str:
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{_esc(title)}</title><style>{CSS}{css_extra}</style></head>
+<body><div class="wrap">{body}</div><script>{js}</script></body></html>"""
+
+
+def render_dashboard_html(d, headlines: list[Headline] | None = None) -> str:
+    """Previous-GW tracker + upcoming-GW recommendation + transfer plan."""
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    lg = (f"{d.league_name} #{d.league_rank}" if d.league_rank else "—")
+    orank = f"{d.overall_rank:,}" if d.overall_rank else "—"
+    last = d.last_gw
+
+    # transfer plan
+    if d.moves:
+        rows = "".join(
+            f'<div class="move"><span class="pill out">OUT {_esc(m.out.name)}</span>'
+            f'<span class="pill in">IN {_esc(m.in_.name)}</span>'
+            f'<span class="gain">+{m.gain:.1f}</span>'
+            f'<div style="flex-basis:100%;font-size:12px;color:var(--muted)">'
+            f'{_esc(m.reason)} · net £{m.cost_delta:+.1f}m</div></div>'
+            for m in d.moves)
+        transfers = rows
+    else:
+        transfers = '<p class="hold">✓ No transfer needed — hold your team.</p>'
+
+    flagged = ("".join(f"<span>{_esc(p.name)} — {_esc(p.news or 'rotation risk')}</span>"
+                       for p in d.flagged) or
+               '<span style="background:none;color:var(--muted)">None flagged 👍</span>')
+    opps = "".join(
+        f'<tr><td>{_esc(p.name)}</td><td>{_esc(p.team_name)}</td>'
+        f'<td class="n">£{p.cost_m:.1f}</td><td class="n">{p.projected:.1f}</td></tr>'
+        for p in d.opportunities)
+    histrows = "".join(
+        f'<tr><td class="n">{h.gw}</td><td class="n">{h.points}</td>'
+        f'<td>{_esc(h.captain)}</td><td class="n">{h.bench_points}</td>'
+        f'<td class="n">{h.transfers}{"(-"+str(h.transfer_cost)+")" if h.transfer_cost else ""}</td>'
+        f'<td class="n">{(f"{h.overall_rank:,}" if h.overall_rank else "—")}</td>'
+        f'<td>{_esc(h.chip or "")}</td></tr>'
+        for h in reversed(d.history))
+    cap = (f'<b>{_esc(d.captain.name)}</b> ({_esc(d.captain.team_name)}) '
+           f'· {d.captain.projected:.1f} proj' if d.captain else "—")
+    vice = f'{_esc(d.vice.name)}' if d.vice else "—"
+    news_html = (f'<div class="card"><h3>Team news</h3>{_news(headlines)}</div>'
+                 if headlines else "")
+
+    body = f"""
+    <header class="hero">
+      <div>
+        <div class="gw">Gameweek {d.upcoming_gw} · Plan</div>
+        <h1>{_esc(d.entry_name or 'My Team')}</h1>
+        <div class="sub">{_esc(d.manager)} · updated {now}</div>
+      </div>
+      <div class="countdown">
+        <div class="big tnum" id="cd" data-deadline="{_esc(d.deadline)}">—</div>
+        <div class="lbl">to GW{d.upcoming_gw} deadline</div>
+      </div>
+    </header>
+    <section class="stats">
+      <div class="stat"><div class="k">Last GW</div><div class="v tnum">{last.points if last else '—'}</div></div>
+      <div class="stat"><div class="k">Overall rank</div><div class="v tnum">{orank}</div></div>
+      <div class="stat"><div class="k">Varsical</div><div class="v tnum">{('#'+str(d.league_rank)) if d.league_rank else '—'}</div></div>
+      <div class="stat"><div class="k">In the bank</div><div class="v tnum">£{d.bank/10:.1f}m</div></div>
+    </section>
+    <div class="btnrow">
+      <a class="btn" href="./live.html">▶ Live scores</a>
+      <a class="btn" href="./league.html">🏆 Varsical league</a>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>⭐ Recommended captain</h3>
+        <p style="font-size:18px;margin:.2em 0">{cap}</p>
+        <p class="muted">Vice: {vice}</p></div>
+      <div class="card"><h3>🔁 Transfer plan (GW{d.upcoming_gw})</h3>{transfers}</div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h3>⚠️ Flagged in your squad</h3><div class="flag-list">{flagged}</div></div>
+      <div class="card"><h3>💡 Opportunities (not owned)</h3>
+        <table><tr><th>Player</th><th>Team</th><th class="n">£m</th><th class="n">Proj</th></tr>{opps}</table></div>
+    </div>
+    {news_html}
+    <h2 class="sec">📅 Previous gameweeks</h2>
+    <div class="card" style="overflow-x:auto">
+      <table><tr><th class="n">GW</th><th class="n">Pts</th><th>Captain</th>
+      <th class="n">Bench</th><th class="n">Transfers</th><th class="n">OR</th><th>Chip</th></tr>
+      {histrows}</table></div>
+    <footer><div>Built by the FPL Agent · <a href="https://github.com/Baldozz/fpl-agent">source</a></div>
+    <div class="disc">Transfer suggestions use projected points and now-cost as sell price —
+    confirm on the FPL site before committing.</div></footer>"""
+    return _doc(f"FPL Plan — GW{d.upcoming_gw}", body, DASH_CSS, JS)
+
+
+def render_league_html(league) -> str:
+    """Varsical standings + each rival's captain / GW points / formation."""
+    def fmt(team):
+        if not team:
+            return "—"
+        c = {2: 0, 3: 0, 4: 0}
+        for p in team.xi:
+            if p.pos in c:
+                c[p.pos] += 1
+        return f"{c[2]}-{c[3]}-{c[4]}"
+    rows = ""
+    for r in league.rows:
+        cap = r.team.captain.name if (r.team and r.team.captain) else "—"
+        chip = (r.team.active_chip if r.team and r.team.active_chip else "")
+        me = ' class="me"' if r.entry_id == 8799067 else ""
+        mv = {"▲": "mv-up", "▼": "mv-dn", "=": "mv-eq"}[r.movement]
+        rows += (f'<tr{me}><td class="n">{r.rank}</td>'
+                 f'<td class="{mv}">{r.movement}</td>'
+                 f'<td>{_esc(r.manager)}<br><span class="muted" style="font-size:12px">'
+                 f'{_esc(r.entry_name)}</span></td>'
+                 f'<td>{_esc(cap)}</td><td>{_esc(fmt(r.team))}</td>'
+                 f'<td class="n">{r.gw_points}</td><td class="n"><b>{r.total}</b></td>'
+                 f'<td>{_esc(chip)}</td></tr>')
+    body = f"""
+    <header class="hero"><div>
+      <div class="gw">Gameweek {league.gw} · League</div>
+      <h1>{_esc(league.name)}</h1>
+      <div class="sub">{len(league.rows)} managers · live captains &amp; scores</div>
+    </div></header>
+    <div class="btnrow"><a class="btn" href="./index.html">← Dashboard</a>
+      <a class="btn" href="./live.html">▶ My live team</a></div>
+    <div class="card" style="overflow-x:auto">
+      <table><tr><th class="n">#</th><th></th><th>Manager / Team</th>
+      <th>Captain (GW{league.gw})</th><th>Form.</th><th class="n">GW</th>
+      <th class="n">Total</th><th>Chip</th></tr>{rows}</table></div>
+    <footer><div>Live from the FPL API · <a href="https://github.com/Baldozz/fpl-agent">source</a></div></footer>"""
+    return _doc(f"{league.name} — GW{league.gw}", body, DASH_CSS)
+
+
 def render_live_html(team, gw: int, deadline: str,
                      headlines: list[Headline], full_document: bool = True) -> str:
     """Render the manager's ACTUAL team with LIVE gameweek scores."""

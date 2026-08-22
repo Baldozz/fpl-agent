@@ -57,6 +57,39 @@ Markdown report for every gameweek into [`reports/`](reports/).
 - **Publishes a report** per gameweek to `reports/GW<n>.md`, committed to GitHub
   so there's a running history of every recommendation.
 
+## 🗂️ Pages the agent publishes
+
+| Page | Command | What it shows |
+|------|---------|---------------|
+| **Dashboard** (`docs/index.html`) | `--dashboard` | Previous-GW **tracker** (points, rank, captain, bench, chips) + **upcoming-GW recommendation**: captain, **transfer plan** (out→in with point gain), flagged players in your squad, and opportunities you don't own |
+| **Live** (`docs/live.html`) | `--live` | Your actual entered team with **live GW scores** |
+| **Varsical league** (`docs/league.html`) | `--league` | Standings for your private league (id `1739086`) with every rival's **captain, formation, GW & total points** |
+
+```bash
+python3 -m fpl_agent --dashboard --html    # writes docs/index.html
+python3 -m fpl_agent --league --html        # writes docs/league.html
+```
+
+## 🔁 Transfer recommender
+
+The agent works from the team you **actually own** (`fpl_agent/transfers.py` +
+`agent.py`): it compares your 15 to the model's projections for the upcoming GW
+and suggests the best transfer(s) within budget and the max-3-per-club rule,
+prioritising **flagged** players (injury/rotation) and then the biggest upgrade.
+Between gameweeks it watches your squad and alerts you when a player is newly
+injured or a strong opportunity appears.
+
+## ⏰ Deadline alert & injury watch (WhatsApp)
+
+- **~2h before every deadline** you get a WhatsApp with the recommended captain +
+  transfer plan (`notify.py --mode deadline`; an hourly cron fires it once inside
+  a 1h window).
+- **Between gameweeks**, a new injury/doubt in your squad triggers a transfer
+  suggestion (`notify.py --mode monitor`, deduped via `state/alerts.json`).
+
+Both need the free CallMeBot setup (WhatsApp section below) — set `WHATSAPP_PHONE`
++ `WHATSAPP_APIKEY`; without them they no-op safely.
+
 ## 📄 Live team page
 
 Every run can render a standalone HTML page — your starting XI laid out on a

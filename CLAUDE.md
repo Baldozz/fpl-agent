@@ -33,7 +33,20 @@ for account automation (which needs their credentials and carries account risk).
 | `overrides.py` + `overrides.json` | Human/Grok start-probability overrides the FPL API lacks. |
 | `report.py` / `html_report.py` | Markdown report / standalone HTML page. `html_report.render_html` = pre-deadline recommendation; `render_live_html` = live actual-team scoreboard. |
 | `live.py` | Fetch the manager's ACTUAL entered team (`entry/{id}/event/{gw}/picks/`) + LIVE points (`event/{gw}/live/`). Public endpoints, no auth. Team id via `--team-id`, `FPL_TEAM_ID`, or `~/.fpl-mcp/config.json`. |
-| `notify.py` | Free WhatsApp deadline reminder via CallMeBot. |
+| `agent.py` | Orchestration: `prepare_players` (shared scoring pipeline) + `build_digest` (tracker + captain + transfers) + `whatsapp_summary`. |
+| `transfers.py` | Transfer recommender vs the ACTUAL squad: `suggest_transfers` (budget/club-legal, flagged-first), `flagged_players`, `opportunities`. |
+| `league.py` | Private-league monitor: paginated standings + each rival's live team. |
+| `live.py` | Actual squad + live scores; also `fetch_history` (tracker) and `fetch_squad_ids`. |
+| `notify.py` | WhatsApp: `--mode deadline` (2h window) and `--mode monitor` (injury watch, deduped via `state/alerts.json`). |
+
+## Pages / CLI modes
+`--dashboard` → `docs/index.html` (tracker + recommendation + transfers);
+`--live` → `docs/live.html`; `--league` → `docs/league.html`; default (no mode)
+→ the from-scratch recommendation report/page. Team id: `FPL_TEAM_ID` / `--team-id`
+/ `~/.fpl-mcp`. League id: `FPL_LEAGUE_ID` / `--league-id` (Varsical = 1739086).
+
+**Privacy:** the league page exposes rivals' teams and the repo/Pages site is
+public — if that matters, make the repo private (Pages still works).
 | `cli.py` / `__main__.py` | `python -m fpl_agent` entry point. |
 
 ## The optimisation philosophy (important)

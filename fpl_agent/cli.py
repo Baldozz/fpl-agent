@@ -19,8 +19,9 @@ import argparse
 import os
 from pathlib import Path
 
-from . import api, grok, live, model, news
-from .html_report import render_html, render_live_html
+from . import agent, api, grok, league, live, model, news
+from .html_report import (render_dashboard_html, render_html, render_league_html,
+                          render_live_html)
 from .optimizer import build_squad
 from .overrides import load_must_include, load_overrides, merge
 from .report import render
@@ -41,6 +42,61 @@ def _load_dotenv() -> None:
             continue
         k, v = line.split("=", 1)
         os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
+def _prepare_players(args, boot, gw, season_started):
+    """Thin wrapper over agent.prepare_players using CLI args."""
+    return agent.prepare_players(
+        boot, gw, season_started, horizon=args.horizon,
+        use_grok=not args.no_grok, use_news=not args.no_news,
+        use_cache=not args.no_cache)
+
+
+def _run_dashboard(args, boot, cur, nxt, gw, season_started) -> int:
+    """Previous-GW tracker + upcoming recommendation + transfer plan page."""
+    team_id = live.resolve_team_id(args.team_id)
+    if not team_id:
+        print("No team id for --dashboard (set FPL_TEAM_ID / ~/.fpl-mcp).")
+        return 1
+    players, all_headlines, _, _ = _prepare_players(args, boot, gw, season_started)
+    league_id = args.league_id or _resolve_league_id()
+    current_gw = (cur or nxt)["id"]
+    d = agent.build_digest(team_id, boot, players, current_gw, gw,
+                           nxt["deadline_time"], league_id, args.free_transfers)
+    headlines = []
+    if all_headlines:
+        headlines = news.relevant_headlines(
+            all_headlines, {p.name for p in d.current},
+            {t["name"] for t in boot["teams"]})
+    print(f"GW{gw} plan — (C) {d.captain.name if d.captain else '—'}; "
+          f"{len(d.moves)} transfer(s), {len(d.flagged)} flagged")
+    if args.html or args.save:
+        DOCS.mkdir(exist_ok=True)
+        (DOCS / "index.html").write_text(
+            render_dashboard_html(d, headlines))
+        print(f"[written] {DOCS/'index.html'} (dashboard)")
+    return 0
+
+
+def _run_league(args, boot, cur, nxt) -> int:
+    """Varsical league monitor page."""
+    league_id = args.league_id or _resolve_league_id()
+    if not league_id:
+        print("No league id (set FPL_LEAGUE_ID or pass --league-id).")
+        return 1
+    gw = (cur or nxt)["id"]
+    lg = league.fetch_league(league_id, gw, boot, with_teams=True)
+    print(f"{lg.name}: {len(lg.rows)} managers, GW{gw}")
+    if args.html or args.save:
+        DOCS.mkdir(exist_ok=True)
+        (DOCS / "league.html").write_text(render_league_html(lg))
+        print(f"[written] {DOCS/'league.html'}")
+    return 0
+
+
+def _resolve_league_id() -> int | None:
+    v = os.environ.get("FPL_LEAGUE_ID")
+    return int(v) if v and v.isdigit() else None
 
 
 def _run_live(args, boot, cur, nxt) -> int:
@@ -67,9 +123,9 @@ def _run_live(args, boot, cur, nxt) -> int:
           f"GW{gw} live: {team.total_points} pts")
     if args.html or args.save:
         DOCS.mkdir(exist_ok=True)
-        (DOCS / "index.html").write_text(page)
+        (DOCS / "live.html").write_text(page)
         (DOCS / f"GW{gw:02d}-live.html").write_text(page)
-        print(f"[written] {DOCS/'index.html'} (live)")
+        print(f"[written] {DOCS/'live.html'}")
     return 0
 
 
@@ -96,8 +152,16 @@ def main(argv: list[str] | None = None) -> int:
                     help="show YOUR actual entered team + live gameweek scores "
                          "(not the recommendation)")
     ap.add_argument("--team-id", type=int, default=None,
-                    help="FPL team id for --live (else env FPL_TEAM_ID / "
-                         "~/.fpl-mcp/config.json)")
+                    help="FPL team id (else env FPL_TEAM_ID / ~/.fpl-mcp/config.json)")
+    ap.add_argument("--dashboard", action="store_true",
+                    help="previous-GW tracker + upcoming recommendation + transfers "
+                         "for YOUR team (writes docs/index.html)")
+    ap.add_argument("--league", action="store_true",
+                    help="Varsical league monitor page (writes docs/league.html)")
+    ap.add_argument("--league-id", type=int, default=None,
+                    help="classic league id (else env FPL_LEAGUE_ID)")
+    ap.add_argument("--free-transfers", type=int, default=1,
+                    help="free transfers available (for the transfer plan)")
     args = ap.parse_args(argv)
 
     boot = api.bootstrap(use_cache=not args.no_cache)
@@ -111,40 +175,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.live:
         return _run_live(args, boot, cur, nxt)
+    if args.league:
+        return _run_league(args, boot, cur, nxt)
+    if args.dashboard:
+        return _run_dashboard(args, boot, cur, nxt, gw, season_started)
 
-    fixtures = api.fixtures(use_cache=not args.no_cache)
-    players = model.build_players(boot)
-    strength = model.team_strength_map(boot)
-    model.attach_fixtures(players, fixtures, gw, args.horizon, strength)
-
-    # Fetch RSS once; used both to drive selection (parse_start_signals) and for
-    # display (relevant_headlines) later.
-    all_headlines: list[news.Headline] = []
-    if not args.no_news:
-        all_headlines = news.fetch_headlines()
-
-    # Start-probability signals, layered lowest -> highest confidence:
-    #   RSS (heuristic, negative-only) < file overrides < Grok (X).
-    # merge(base, extra): extra wins unless the base entry is pinned, so a pinned
-    # manual override always wins.
-    rss_sig = news.parse_start_signals(
-        all_headlines, {p.name for p in players.values()}) if all_headlines else {}
-    signals = merge(rss_sig, load_overrides())      # file overrides beat RSS
-    grok_used = False
-    grok_bullets: list[dict] = []
-    if not args.no_grok and grok.available():
-        team_names = [t["name"] for t in boot["teams"]]
-        gsig, grok_bullets = grok.analyse(team_names, gw)
-        if gsig:
-            signals = merge(signals, gsig)          # Grok beats RSS + unpinned file
-            grok_used = True
-    model.apply_start_signals(players, signals)
-    rss_used = sum(1 for s in signals.values() if s.get("source") == "rss")
-    if rss_used:
-        print(f"[rss] {rss_used} start-prob signals from RSS headlines")
-
-    games_played = sum(1 for e in boot["events"] if e.get("finished"))
-    model.score_players(players, season_started, games_played)
+    players, all_headlines, grok_bullets, grok_used = _prepare_players(
+        args, boot, gw, season_started)
 
     if args.formation.strip().lower() == "free":
         formation = None

@@ -1,21 +1,28 @@
-name: Weekly FPL report
+name: FPL agent
 
-# Runs a few times a week so a fresh recommendation lands before each deadline.
-# Adjust the cron to taste; times are UTC. Also runnable on demand.
+# Publishes the dashboard / live / league pages, watches for injuries, and sends
+# the pre-deadline WhatsApp plan. Times are UTC. Also runnable on demand.
 on:
   schedule:
-    - cron: "0 9 * * 4"        # Thu 09:00 UTC — recommendation before deadline
-    - cron: "0 9 * * 5"        # Fri 09:00 UTC — recommendation before deadline
-    - cron: "0 13,16,19 * * 6" # Sat — refresh LIVE scores during matches
-    - cron: "0 14,16,19 * * 0" # Sun — refresh LIVE scores during matches
-    - cron: "0 20 * * 1"       # Mon 20:00 UTC — refresh LIVE (Monday games)
+    - cron: "0 * * * 4,5"      # Thu & Fri hourly — catch the ~2h-before-deadline alert
+    - cron: "0 8 * * 1,2,3"    # Mon–Wed 08:00 — between-GW injury watch + pages
+    - cron: "0 13,16,19 * * 6" # Sat — refresh live scores during matches
+    - cron: "0 14,16,19 * * 0" # Sun — refresh live scores during matches
+    - cron: "0 20 * * 1"       # Mon night — Monday-game live refresh
   workflow_dispatch:
 
 permissions:
   contents: write
 
+env:
+  FPL_TEAM_ID: ${{ vars.FPL_TEAM_ID }}
+  FPL_LEAGUE_ID: ${{ vars.FPL_LEAGUE_ID }}
+  XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+  WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
+  WHATSAPP_APIKEY: ${{ secrets.WHATSAPP_APIKEY }}
+
 jobs:
-  report:
+  agent:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,25 +30,29 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m pip install -r requirements.txt
-      - name: Generate recommendation report (markdown) for the upcoming GW
-        run: python -m fpl_agent --horizon 3 --save
-      - name: Publish LIVE team page (your actual squad + live scores)
-        env:
-          FPL_TEAM_ID: ${{ vars.FPL_TEAM_ID }}
-        run: python -m fpl_agent --live --html || echo "live page skipped"
-      - name: Send WhatsApp reminder (no-op unless secrets are set)
-        env:
-          WHATSAPP_PHONE: ${{ secrets.WHATSAPP_PHONE }}
-          WHATSAPP_APIKEY: ${{ secrets.WHATSAPP_APIKEY }}
-        run: python -m fpl_agent.notify
-      - name: Commit report + page if changed
+
+      - name: Recommendation report (markdown) for the upcoming GW
+        run: python -m fpl_agent --horizon 3 --save --no-grok || echo "skipped"
+      - name: Dashboard page (tracker + recommendation + transfers)
+        run: python -m fpl_agent --dashboard --html --no-grok || echo "skipped"
+      - name: Live team page (actual squad + live scores)
+        run: python -m fpl_agent --live --html || echo "skipped"
+      - name: Varsical league page
+        run: python -m fpl_agent --league --html --no-grok || echo "skipped"
+
+      - name: Pre-deadline WhatsApp plan (fires only within the 2h window)
+        run: python -m fpl_agent.notify --mode deadline || echo "skipped"
+      - name: Between-GW injury watch (alerts on new flags)
+        run: python -m fpl_agent.notify --mode monitor || echo "skipped"
+
+      - name: Commit pages / reports / alert state if changed
         run: |
           git config user.name  "fpl-agent-bot"
           git config user.email "actions@github.com"
-          git add reports/ docs/
+          git add reports/ docs/ state/
           if git diff --cached --quiet; then
             echo "No changes."
           else
-            git commit -m "chore: weekly FPL report + page [skip ci]"
+            git commit -m "chore: FPL agent update [skip ci]"
             git push
           fi
