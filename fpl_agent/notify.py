@@ -29,7 +29,11 @@ from .agent import whatsapp_summary
 
 ROOT = Path(__file__).resolve().parent.parent
 STATE_PATH = ROOT / "state" / "alerts.json"
-PAGE_URL = os.environ.get("FPL_PAGE_URL", "https://baldozz.github.io/fpl-agent/")
+# Public page URL for the alert link. Empty by default now that the repo is
+# private (GitHub Pages is disabled for private repos on the Free plan), so the
+# self-contained plan in the message isn't followed by a dead 404 link. Set
+# FPL_PAGE_URL if you re-enable a public/hosted page.
+PAGE_URL = os.environ.get("FPL_PAGE_URL", "")
 WINDOW_LO = float(os.environ.get("FPL_DEADLINE_WINDOW_LO", "1.0"))   # hours
 WINDOW_HI = float(os.environ.get("FPL_DEADLINE_WINDOW_HI", "2.0"))   # hours
 
@@ -102,7 +106,8 @@ def deadline_mode() -> int:
     d, nxt = _build(use_grok=True)
     if d is None:
         return 0
-    send_whatsapp(f"{whatsapp_summary(d)} | Full plan: {PAGE_URL}")
+    msg = whatsapp_summary(d) + (f" | Full plan: {PAGE_URL}" if PAGE_URL else "")
+    send_whatsapp(msg)
     return 0
 
 
@@ -119,7 +124,8 @@ def monitor_mode() -> int:
         print("[notify] no new injuries/doubts in your squad.")
         return 0
     names = ", ".join(f"{p.name} ({p.news or 'doubt'})" for p in newly)
-    msg = f"⚠️ FPL alert — {names}. {whatsapp_summary(d)} | {PAGE_URL}"
+    msg = (f"⚠️ FPL alert — {names}. {whatsapp_summary(d)}"
+           + (f" | {PAGE_URL}" if PAGE_URL else ""))
     send_whatsapp(msg)
     state["flagged"] = [p.name for p in d.flagged]
     _save_state(state)
