@@ -76,6 +76,18 @@ in `overrides.json`, else a last-season minutes/starts model
 World-Cup-return rotation, nailed new signings — to `overrides.json` (or let
 Grok populate it).
 
+## Interactive MCP (fantasy-pl-mcp)
+
+`.mcp.json` wires in the community `fpl-mcp` server (23 tools) for interactive,
+in-chat use — distinct from the automated agent. Its unique value over our direct
+API client is **authenticated own-team access** (`get_my_current_team`,
+`get_manager_transfer_history`, `suggest_captain`, etc.), enabling transfer/captain
+advice grounded in the user's real squad now that a team is entered. Auth is a
+one-time `fpl-mcp-config setup` (FPL refresh token → encrypted `~/.fpl-mcp/`,
+never committed); token is the user's to install, not ours to extract. The `.mcp.json`
+`command` is an absolute Python path for this machine — not portable to CI (the
+GitHub Action never needs it; it uses the direct API only).
+
 ## Secrets
 
 `XAI_API_KEY` (and any secret) lives in a **gitignored `.env`** or the

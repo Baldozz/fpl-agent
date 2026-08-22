@@ -116,6 +116,34 @@ python3 -m fpl_agent                     # Grok used automatically when availabl
 python3 -m fpl_agent --no-grok           # force-skip Grok
 ```
 
+## Live MCP companion (interactive, reads your real team)
+
+The automated agent builds a squad from scratch and publishes the page/reports.
+For **interactive, in-chat** analysis — and to work from the team you *actually*
+own — this repo is wired to the community
+[fantasy-pl-mcp](https://github.com/rishijatia/fantasy-pl-mcp) server
+(`.mcp.json`). It gives the assistant 23 live FPL tools: `get_my_current_team`,
+`get_manager_transfer_history`, `suggest_captain`, `compare_players`,
+`analyze_fixtures`, `get_double_gameweeks`, `get_league_standings`, and more.
+
+Setup:
+
+```bash
+pip install fpl-mcp          # already installed
+fpl-mcp-config setup        # one-time: paste your FPL refresh token (from the
+                            # browser console) — enables your-team tools.
+                            # Stored encrypted in ~/.fpl-mcp/, never committed.
+```
+
+Then **restart Claude Code** (or approve the `fantasy-pl` server when prompted)
+so the tools load. The `.mcp.json` command uses this machine's Python path —
+adjust it if you run elsewhere. The token is optional: without it the public
+data/analysis tools still work; with it, the assistant can read your live squad,
+bank and transfers to give transfer/captain advice grounded in your real team.
+
+This is complementary to the automated agent, not a replacement — the agent still
+runs unattended (page, reports, WhatsApp) with no login.
+
 ## Data sources (all free)
 
 | Source | Used for |
