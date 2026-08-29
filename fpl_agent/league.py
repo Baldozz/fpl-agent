@@ -26,12 +26,28 @@ class LeagueRow:
     total: int
     gw_points: int
     team: LiveTeam | None = None   # filled if we fetch each rival's squad
+    # Squad-strength scoring (filled by attach_power): a forward-looking rating
+    # of how good the SQUAD is right now, independent of accumulated points.
+    power: float = 0.0             # Σ projected pts over XI (+ bench depth bonus)
+    xi_form: float = 0.0           # Σ current form over the XI
+    power_rank: int = 0            # 1 = strongest squad in the league
 
     @property
     def movement(self) -> str:
         if not self.last_rank or self.last_rank == self.rank:
             return "="
         return "▲" if self.rank < self.last_rank else "▼"
+
+    @property
+    def power_delta(self) -> int:
+        """How much better/worse the squad rates than the league position.
+
+        Positive = the squad is stronger than the table suggests (rising);
+        negative = over-performing the squad's underlying quality.
+        """
+        if not self.power_rank:
+            return 0
+        return self.rank - self.power_rank
 
 
 @dataclass
@@ -79,3 +95,32 @@ def fetch_league(league_id: int, gw: int, bootstrap: dict,
             except Exception:
                 row.team = None
     return League(league_id=league_id, name=name, gw=gw, rows=rows)
+
+
+# Bench players rarely play but add depth/cover — count them at a discount.
+BENCH_DEPTH_WEIGHT = 0.15
+
+
+def attach_power(league: League, players: dict) -> None:
+    """Rate every rival's SQUAD by projected points + current form.
+
+    ``players`` is the scored ``dict[element_id -> Player]`` from
+    ``agent.prepare_players`` — its ``projected`` already blends form, fixture
+    difficulty, team strength and availability, so summing it over a manager's
+    starting XI gives a forward-looking "how strong is this squad right now"
+    number that is independent of the points they have banked so far. A small
+    weighted contribution from the bench rewards squad depth.
+
+    Sets ``power``, ``xi_form`` and ``power_rank`` on each row that has a team.
+    """
+    scored = [r for r in league.rows if r.team]
+    for row in scored:
+        xi_proj = sum(players[p.element].projected
+                      for p in row.team.xi if p.element in players)
+        bench_proj = sum(players[p.element].projected
+                         for p in row.team.bench if p.element in players)
+        row.power = xi_proj + BENCH_DEPTH_WEIGHT * bench_proj
+        row.xi_form = sum(players[p.element].form
+                          for p in row.team.xi if p.element in players)
+    for i, row in enumerate(sorted(scored, key=lambda r: -r.power), start=1):
+        row.power_rank = i

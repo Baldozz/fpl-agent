@@ -32,6 +32,7 @@ class LivePick:
     points: int          # live GW points (before multiplier)
     minutes: int
     started_fixture: bool  # has the player's team match kicked off / finished
+    element: int = 0       # FPL element id (to join against scored projections)
 
     @property
     def cost_m(self) -> float:
@@ -158,6 +159,7 @@ def fetch_live_team(team_id: int, gw: int, bootstrap: dict) -> LiveTeam:
             is_captain=p["is_captain"], is_vice=p["is_vice_captain"],
             points=live_pts.get(pid, 0), minutes=live_min.get(pid, 0),
             started_fixture=live_min.get(pid, 0) > 0,
+            element=pid,
         )
 
     all_picks = [make(p) for p in picks["picks"]]

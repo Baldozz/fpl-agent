@@ -82,11 +82,14 @@ def _run_site(args, boot, cur, nxt, gw, season_started) -> int:
             print(f"[site] league skipped: {e}")
     if lg is None:
         lg = league.League(league_id=league_id or 0, name="League", gw=current_gw)
+    else:
+        league.attach_power(lg, players)   # squad-strength rating per rival
 
     headlines = (news.relevant_headlines(
         all_headlines, {p.name for p in d.current},
         {t["name"] for t in boot["teams"]}) if all_headlines else [])
-    page = render_site(d, live_by_gw, lg, headlines, available, current_gw, deadline)
+    page = render_site(d, live_by_gw, lg, headlines, available, current_gw,
+                       deadline, players=players)
     print(f"Unified site: GW{gw} plan (C {d.captain.name if d.captain else '—'}), "
           f"{len(available)} live GW(s), league '{lg.name}' ({len(lg.rows)})")
     if args.html or args.save:
@@ -122,18 +125,20 @@ def _run_dashboard(args, boot, cur, nxt, gw, season_started) -> int:
     return 0
 
 
-def _run_league(args, boot, cur, nxt) -> int:
+def _run_league(args, boot, cur, nxt, gw, season_started) -> int:
     """Varsical league monitor page."""
     league_id = args.league_id or _resolve_league_id()
     if not league_id:
         print("No league id (set FPL_LEAGUE_ID or pass --league-id).")
         return 1
-    gw = (cur or nxt)["id"]
-    lg = league.fetch_league(league_id, gw, boot, with_teams=True)
-    print(f"{lg.name}: {len(lg.rows)} managers, GW{gw}")
+    live_gw = (cur or nxt)["id"]
+    lg = league.fetch_league(league_id, live_gw, boot, with_teams=True)
+    players, _, _, _ = _prepare_players(args, boot, gw, season_started)
+    league.attach_power(lg, players)   # squad-strength rating per rival
+    print(f"{lg.name}: {len(lg.rows)} managers, GW{live_gw}")
     if args.html or args.save:
         DOCS.mkdir(exist_ok=True)
-        (DOCS / "league.html").write_text(render_league_html(lg))
+        (DOCS / "league.html").write_text(render_league_html(lg, players=players))
         print(f"[written] {DOCS/'league.html'}")
     return 0
 
@@ -240,7 +245,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.live:
         return _run_live(args, boot, cur, nxt)
     if args.league:
-        return _run_league(args, boot, cur, nxt)
+        return _run_league(args, boot, cur, nxt, gw, season_started)
     if args.dashboard:
         return _run_dashboard(args, boot, cur, nxt, gw, season_started)
 
