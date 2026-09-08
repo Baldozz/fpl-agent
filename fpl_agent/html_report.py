@@ -358,6 +358,159 @@ def _live_card(p, captain_mult: int = 2) -> str:
       </div>"""
 
 
+# ---- Planned (pre-deadline) pitch: kit + projected pts + form + next opponent ----
+PLANNED_CSS = """
+.fp .pmn{display:flex;flex-direction:column;gap:2px;margin-top:3px;font-size:10px;line-height:1.25}
+.fp .pmn .frm{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);font-weight:700}
+.fp .pmn .opp{display:inline-block;border-radius:4px;padding:0 4px;font-weight:800;color:#fff;
+  align-self:center}
+.opp.fdr1,.opp.fdr2{background:#1f9d57}.opp.fdr3{background:#5b6b7b}
+.opp.fdr4{background:#d9772b}.opp.fdr5{background:#c02a4a}
+.benchbar .fp .pmn .frm{color:var(--muted);text-shadow:none}
+.pt.proj{background:#e9eef7;color:#1c2a3a}
+:root[data-theme="dark"] .pt.proj{background:#1b2735;color:#dbe6f3}
+/* Formation-shape list: each shape + the XI it actually picks */
+.fshape{border-top:1px solid var(--line);padding:7px 0}
+.fshape .fhd{display:flex;align-items:baseline;gap:8px}
+.fshape .ff{font-weight:800;font-size:14px}
+.fshape .fpts{margin-left:auto;font-weight:800;color:var(--muted)}
+.fshape .fxi{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:2px}
+.fshape .fsep{color:var(--green);font-weight:800}
+.fshape.rec{background:rgba(31,157,87,.09);border-radius:10px;padding:8px 10px;
+  border-top:none;margin:2px 0}
+.fshape.rec .ff{color:#1f9d57}
+.fshape.rec .fpts{color:#1f9d57}
+.fshape.cur{opacity:.85}
+"""
+
+
+def _planned_card(p: dict) -> str:
+    """A pitch card for the upcoming GW: kit, name, projected pts, form + opponent.
+
+    ``p`` keys: name, pos (1..4), code (team kit code), team (short name),
+    form, proj, opp (short), ha ("H"/"A"), fdr (1..5), is_captain, is_vice.
+    """
+    band = ('<span class="band">C</span>' if p.get("is_captain") else
+            '<span class="band v">V</span>' if p.get("is_vice") else "")
+    kit = _kit_url(p["code"], p["pos"])
+    opp = f'{p["opp"]} ({p["ha"]})' if p.get("opp") else ""
+    oppcls = f' fdr{int(p["fdr"])}' if p.get("fdr") else ""
+    return f"""
+      <div class="fp{' cap' if p.get('is_captain') else ''}">
+        <div class="kitwrap" data-pos="{p['pos']}">{band}<img src="{kit}"
+          alt="{_esc(p['team'])}" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">{_esc(p['name'])}</div>
+        <div class="pt proj">{p['proj']}</div>
+        <div class="pmn"><span class="frm">form {p['form']}</span>
+          <span class="opp{oppcls}">{_esc(opp)}</span></div>
+      </div>"""
+
+
+def render_planned_pitch(players: list[dict], *, gw: int, deadline: str = "",
+                         entry_name: str = "My Team", manager: str = "",
+                         formation: str = "", xi_points: float | None = None,
+                         stats: list[tuple[str, str]] | None = None,
+                         note: str = "", embed: bool = False) -> str:
+    """Render the upcoming-GW squad on the pitch (projected pts + form + opponent)."""
+    starters = [p for p in players if not p.get("on_bench")]
+    bench = [p for p in players if p.get("on_bench")]
+
+    def line(pos):
+        cards = "".join(_planned_card(p) for p in starters if p["pos"] == pos)
+        return f'<div class="frow">{cards}</div>'
+    pitch = f'<div class="fpitch">{"".join(line(pos) for pos,_ in POS_ROWS)}</div>'
+    benchbar = f'<div class="benchbar">{"".join(_planned_card(p) for p in bench)}</div>'
+    statrow = ""
+    if stats:
+        statrow = ('<section class="stats">'
+                   + "".join(f'<div class="stat"><div class="k">{_esc(k)}</div>'
+                             f'<div class="v tnum">{_esc(v)}</div></div>' for k, v in stats)
+                   + '</section>')
+    big = f"{xi_points}" if xi_points is not None else "—"
+    note_html = (f'<p class="muted" style="font-size:11.5px;margin-top:10px">{note}</p>'
+                 if note else "")
+    content = f"""
+    <header class="hero">
+      <div>
+        <div class="gw">Gameweek {gw} · Your team (planned)</div>
+        <h1>{_esc(entry_name)}</h1>
+        <div class="sub">{_esc(manager)} · projected pts · pre-deadline</div>
+      </div>
+      <div class="countdown"><div class="big tnum">{big}</div>
+        <div class="lbl">XI projected · {_esc(formation)}</div></div>
+    </header>
+    {statrow}
+    <div class="card"><h3>Your XI · {_esc(formation)}</h3>{pitch}
+      <h3 style="margin-top:14px">Bench</h3>{benchbar}{note_html}</div>"""
+    return content
+
+
+def _xi_line(xi) -> str:
+    """Format an XI as position-grouped names: GK · DEF · MID · FWD."""
+    groups = {"GK": [], "DEF": [], "MID": [], "FWD": []}
+    for p in xi:
+        groups.get(p.position, groups["MID"]).append(_esc(p.name))
+    return " &nbsp;<span class='fsep'>·</span>&nbsp; ".join(
+        ", ".join(groups[k]) for k in ("GK", "DEF", "MID", "FWD") if groups[k])
+
+
+def render_formation_card(rec) -> str:
+    """Dashboard card for a strategy.FormationRec: each shape with its actual XI."""
+    if rec is None or not getattr(rec, "formation", None) or rec.formation == "—":
+        return ""
+    gain = rec.gain
+    gtag = (f'<span style="font-size:13px;font-weight:700;color:#1f9d57"> '
+            f'+{gain} proj vs your current XI</span>' if gain and gain > 0 else "")
+    bench_names = ", ".join(_esc(p.name) for p in rec.bench)
+    shapes = ""
+    for f, pts, xi in rec.alternatives:
+        is_rec = f == rec.formation
+        shapes += (
+            f'<div class="fshape{" rec" if is_rec else ""}">'
+            f'<div class="fhd"><span class="ff">{_esc(f)}'
+            f'{" ✅" if is_rec else ""}</span>'
+            f'<span class="fpts tnum">{pts}</span></div>'
+            f'<div class="fxi">{_xi_line(xi)}</div></div>')
+    if rec.current_xi:
+        shapes += (
+            f'<div class="fshape cur"><div class="fhd">'
+            f'<span class="ff">Your current XI ({_esc(rec.current_formation)})</span>'
+            f'<span class="fpts tnum">{rec.current_points}</span></div>'
+            f'<div class="fxi">{_xi_line(rec.current_xi)}</div></div>')
+    note = (f'<p class="muted" style="font-size:11px;margin-top:8px">{_esc(rec.note)}</p>'
+            if rec.note else "")
+    return (f'<div class="card"><h3>🧩 Recommended formation</h3>'
+            f'<p style="font-size:22px;margin:.1em 0 2px;font-weight:800">'
+            f'{_esc(rec.formation)}{gtag}</p>'
+            f'<p class="muted" style="font-size:11.5px;margin:0 0 8px">'
+            f'Bench: {bench_names}</p>{shapes}{note}</div>')
+
+
+def render_chip_card(rec, chips_available: set[str] | None = None) -> str:
+    """Dashboard card for a strategy.ChipRec (chip timing)."""
+    if rec is None:
+        return ""
+    from .strategy import label_chip
+    head = f"Play {label_chip(rec.chip)}" if rec.play else "Hold all chips"
+    guide = ("<ul style=\"font-size:12.5px;margin:.2em 0;padding-left:18px;line-height:1.7\">"
+             "<li><b>Triple Captain</b> &amp; <b>Bench Boost</b> → a <b>double</b> gameweek</li>"
+             "<li><b>Free Hit</b> → a <b>blank</b> gameweek (or an injury crisis)</li>"
+             "<li><b>Wildcard</b> → a fixture swing / when 4+ transfers pile up</li></ul>")
+    avail = ""
+    if chips_available:
+        labels = {"wildcard": "Wildcard", "freehit": "Free Hit",
+                  "3xc": "Triple Captain", "bboost": "Bench Boost"}
+        got = " · ".join(labels[c] for c in ("wildcard", "freehit", "3xc", "bboost")
+                         if c in chips_available)
+        avail = (f'<p style="font-size:12px;margin:.5em 0 0"><b>Available:</b> {got} '
+                 f'<span class="muted">(unused)</span></p>')
+    return (f'<div class="card"><h3>🃏 Chip strategy</h3>'
+            f'<p style="font-size:20px;margin:.1em 0;font-weight:800">{_esc(head)}</p>'
+            f'<p class="muted" style="font-size:12.5px;margin:.3em 0 8px">{_esc(rec.reason)}</p>'
+            f'{guide}{avail}</div>')
+
+
 DASH_CSS = """
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media(max-width:760px){.grid2{grid-template-columns:1fr}}
@@ -470,8 +623,55 @@ def _doc(title: str, body: str, css_extra: str = "", js: str = "") -> str:
 <body><div class="wrap">{body}</div><script>{js}</script></body></html>"""
 
 
+def render_expert_watch(intel, *, own_clubs: set[str] | None = None) -> str:
+    """A dashboard card summarising free expert-site intel (experts.WeeklyIntel).
+
+    Shows each source's summary + link and a heuristic list of clubs the
+    experts are flagging favourably (marking which you already own). Returns
+    an empty string when there is nothing usable, so callers can inline it
+    unconditionally.
+    """
+    if intel is None or not getattr(intel, "ok", False):
+        return ""
+    own_clubs = own_clubs or set()
+    chips = "".join(
+        f'<span class="xclub{" own" if club in own_clubs else ""}">{_esc(club)}'
+        f'{" ✓" if club in own_clubs else ""}</span>'
+        for club, _ in intel.target_clubs[:6])
+    clubs_row = (f'<div class="xclubs"><span class="muted">Experts flagging: </span>{chips}</div>'
+                 if chips else "")
+    srcs = ""
+    for s in intel.sources:
+        if not s.ok or not s.summary:
+            continue
+        srcs += (f'<div class="xsrc"><a href="{_esc(s.url)}" target="_blank" '
+                 f'rel="noopener">{_esc(s.name)}</a>'
+                 f'<p>{_esc(s.summary)}</p></div>')
+    if not srcs and not clubs_row:
+        return ""
+    return (f'<div class="card"><h3>🔎 Expert Watch (GW{intel.gw})</h3>'
+            f'{clubs_row}{srcs}'
+            f'<p class="muted" style="font-size:11px;margin-top:8px">'
+            f'Free summaries from Fantasy Football Hub &amp; Fantasy Football Scout · '
+            f'club flags are a keyword heuristic — advisory only.</p></div>')
+
+
+EXPERT_CSS = """
+.xclubs{margin:2px 0 12px;line-height:2}
+.xclub{display:inline-block;padding:2px 9px;margin:2px 4px 2px 0;border-radius:999px;
+  font-size:12px;font-weight:600;background:var(--panel);border:1px solid var(--line)}
+.xclub.own{background:#1f7a4d22;border-color:#1f7a4d;color:#1f7a4d}
+:root[data-theme="dark"] .xclub.own{color:#5fd39a;border-color:#2e8f61}
+.xsrc{margin:10px 0;padding-left:10px;border-left:2px solid var(--line)}
+.xsrc a{font-weight:700;font-size:13px}
+.xsrc p{margin:4px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+"""
+
+
 def render_dashboard_html(d, headlines: list[Headline] | None = None,
-                          full_document: bool = True) -> str:
+                          full_document: bool = True, expert_intel=None,
+                          formation_rec=None, chip_rec=None,
+                          chips_available=None) -> str:
     """Previous-GW tracker + upcoming-GW recommendation + transfer plan."""
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     lg = (f"{d.league_name} #{d.league_rank}" if d.league_rank else "—")
@@ -510,6 +710,11 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None,
     vice = f'{_esc(d.vice.name)}' if d.vice else "—"
     news_html = (f'<div class="card"><h3>Team news</h3>{_news(headlines)}</div>'
                  if headlines else "")
+    own_clubs = {p.team_name for p in d.current} if getattr(d, "current", None) else set()
+    expert_html = render_expert_watch(expert_intel, own_clubs=own_clubs)
+    fcard = render_formation_card(formation_rec)
+    ccard = render_chip_card(chip_rec, chips_available=chips_available)
+    strategy_html = f'<div class="grid2">{fcard}{ccard}</div>' if (fcard or ccard) else ""
     nav = ('<div class="btnrow"><a class="btn" href="./live.html">▶ Live scores</a>'
            '<a class="btn" href="./league.html">🏆 Varsical league</a></div>'
            if full_document else "")
@@ -539,6 +744,8 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None,
         <p class="muted">Vice: {vice}</p></div>
       <div class="card"><h3>🔁 Transfer plan (GW{d.upcoming_gw})</h3>{transfers}</div>
     </div>
+    {strategy_html}
+    {expert_html}
     <div class="grid2">
       <div class="card"><h3>⚠️ Flagged in your squad</h3><div class="flag-list">{flagged}</div></div>
       <div class="card"><h3>💡 Opportunities (not owned)</h3>
@@ -555,7 +762,8 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None,
     confirm on the FPL site before committing.</div></footer>"""
     if not full_document:
         return body
-    return _doc(f"FPL Plan — GW{d.upcoming_gw}", body, DASH_CSS, JS)
+    return _doc(f"FPL Plan — GW{d.upcoming_gw}", body,
+                DASH_CSS + EXPERT_CSS + PLANNED_CSS, JS)
 
 
 MY_ENTRY_ID = 8799067
@@ -850,21 +1058,45 @@ if(gsel)gsel.onchange=function(){
 
 
 def render_site(d, live_by_gw: dict, league, headlines, available_gws: list[int],
-                current_gw: int, deadline: str, players: dict | None = None) -> str:
-    """One tabbed page: Dashboard | My Team (live, GW switcher) | League."""
-    dash = render_dashboard_html(d, headlines, full_document=False)
+                current_gw: int, deadline: str, players: dict | None = None,
+                expert_intel=None, formation_rec=None, chip_rec=None,
+                chips_available=None, planned_players=None,
+                planned_meta: dict | None = None) -> str:
+    """One tabbed page: Dashboard | My Team (live + planned GW) | League."""
+    dash = render_dashboard_html(d, headlines, full_document=False,
+                                 expert_intel=expert_intel,
+                                 formation_rec=formation_rec, chip_rec=chip_rec,
+                                 chips_available=chips_available)
     lg = render_league_html(league, full_document=False, players=players)
 
     gws = sorted(available_gws)
-    opts = "".join(f'<option value="{g}"{" selected" if g==current_gw else ""}>'
-                   f'Gameweek {g}</option>' for g in gws)
-    panes = ""
+    # An optional "planned" pane for the upcoming GW (projected pts + form +
+    # opponent) becomes the default view when supplied.
+    planned_gw = getattr(d, "upcoming_gw", None) if planned_players else None
+    planned_pane = ""
+    if planned_players and planned_gw:
+        meta = planned_meta or {}
+        planned_inner = render_planned_pitch(
+            planned_players, gw=planned_gw, deadline=deadline,
+            entry_name=d.entry_name or "My Team", manager=meta.get("manager", ""),
+            formation=meta.get("formation", ""), xi_points=meta.get("xi_points"),
+            stats=meta.get("stats"), note=meta.get("note", ""), embed=True)
+        planned_pane = (f'<div class="gwpane active" data-gw="{planned_gw}">'
+                        f'{planned_inner}</div>')
+
+    opts = ""
+    if planned_gw:
+        opts += f'<option value="{planned_gw}" selected>Gameweek {planned_gw}</option>'
+    opts += "".join(
+        f'<option value="{g}"{" selected" if (g==current_gw and not planned_gw) else ""}>'
+        f'Gameweek {g}</option>' for g in gws)
+    panes = planned_pane
     for g in gws:
         team = live_by_gw.get(g)
         if not team:
             continue
         inner = render_live_html(team, g, deadline, [], embed=True)
-        active = " active" if g == current_gw else ""
+        active = " active" if (g == current_gw and not planned_gw) else ""
         panes += f'<div class="gwpane{active}" data-gw="{g}">{inner}</div>'
     team_tab = (f'<div class="gwbar"><label for="gwsel">View gameweek:</label>'
                 f'<select id="gwsel" class="gwsel">{opts}</select></div>{panes}')
@@ -885,7 +1117,7 @@ def render_site(d, live_by_gw: dict, league, headlines, available_gws: list[int]
         f'<div id="tab-team" class="pane">{team_tab}</div>'
         f'<div id="tab-league" class="pane">{lg}</div>'
         f'</div>')
-    css = CSS + DASH_CSS + LIVE_CSS + LEAGUE_CSS + SITE_CSS
+    css = CSS + DASH_CSS + LIVE_CSS + LEAGUE_CSS + SITE_CSS + EXPERT_CSS + PLANNED_CSS
     js = JS + SITE_JS + LEAGUE_JS
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">

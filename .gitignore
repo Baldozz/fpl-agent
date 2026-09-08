@@ -4,6 +4,7 @@
 
 # Cached API payloads (regenerated on every run)
 /data/*.json
+/data/*.html
 !/data/.gitkeep
 
 # Python

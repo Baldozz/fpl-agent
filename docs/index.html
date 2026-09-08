@@ -260,13 +260,46 @@ tr.detail>td{padding:0 8px 12px !important;border:none !important}
   transition:transform .12s}
 .stat:hover{transform:translateY(-2px)}
 header.hero{box-shadow:0 12px 34px -14px rgba(0,0,0,.5)}
+
+.xclubs{margin:2px 0 12px;line-height:2}
+.xclub{display:inline-block;padding:2px 9px;margin:2px 4px 2px 0;border-radius:999px;
+  font-size:12px;font-weight:600;background:var(--panel);border:1px solid var(--line)}
+.xclub.own{background:#1f7a4d22;border-color:#1f7a4d;color:#1f7a4d}
+:root[data-theme="dark"] .xclub.own{color:#5fd39a;border-color:#2e8f61}
+.xsrc{margin:10px 0;padding-left:10px;border-left:2px solid var(--line)}
+.xsrc a{font-weight:700;font-size:13px}
+.xsrc p{margin:4px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+
+.fp .pmn{display:flex;flex-direction:column;gap:2px;margin-top:3px;font-size:10px;line-height:1.25}
+.fp .pmn .frm{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6);font-weight:700}
+.fp .pmn .opp{display:inline-block;border-radius:4px;padding:0 4px;font-weight:800;color:#fff;
+  align-self:center}
+.opp.fdr1,.opp.fdr2{background:#1f9d57}.opp.fdr3{background:#5b6b7b}
+.opp.fdr4{background:#d9772b}.opp.fdr5{background:#c02a4a}
+.benchbar .fp .pmn .frm{color:var(--muted);text-shadow:none}
+.pt.proj{background:#e9eef7;color:#1c2a3a}
+:root[data-theme="dark"] .pt.proj{background:#1b2735;color:#dbe6f3}
+
+/* Formation-shape list: each shape + the XI it actually picks */
+.fshape{border-top:1px solid var(--line);padding:7px 0}
+.fshape .fhd{display:flex;align-items:baseline;gap:8px}
+.fshape .ff{font-weight:800;font-size:14px}
+.fshape .fpts{margin-left:auto;font-weight:800;color:var(--muted)}
+.fshape .fxi{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:2px}
+.fshape .fsep{color:var(--green);font-weight:800}
+.fshape.rec{background:rgba(31,157,87,.09);border-radius:10px;padding:8px 10px;
+  border-top:none;margin:2px 0}
+.fshape.rec .ff{color:#1f9d57}
+.fshape.rec .fpts{color:#1f9d57}
+.fshape.cur{opacity:.85}
+
 </style></head>
 <body><div class="topbar"><div class="topbar-in"><div class="brand"><span class="dot">⚽</span><span>FPL Agent<span class="muted" style="font-weight:600"> · BAildo</span></span></div><div class="tabs"><button class="tab active" data-pane="tab-dash">📋<span class="lbl"> Dashboard</span></button><button class="tab" data-pane="tab-team">⚽<span class="lbl"> My Team</span></button><button class="tab" data-pane="tab-league">🏆<span class="lbl"> Varsical</span></button></div></div></div><div class="wrap"><div id="tab-dash" class="pane active">
     <header class="hero">
       <div>
         <div class="gw">Gameweek 4 · Plan</div>
         <h1>BAildo</h1>
-        <div class="sub">Fabio Baldini · updated 2026-09-08 12:29 UTC</div>
+        <div class="sub">Fabio Baldini · updated 2026-09-08 12:15 UTC</div>
       </div>
       <div class="countdown">
         <div class="big tnum" id="cd" data-deadline="2026-09-12T12:30:00Z">—</div>
@@ -277,15 +310,26 @@ header.hero{box-shadow:0 12px 34px -14px rgba(0,0,0,.5)}
       <div class="stat"><div class="k">Last GW</div><div class="v tnum">49</div></div>
       <div class="stat"><div class="k">Overall rank</div><div class="v tnum">6,520,978</div></div>
       <div class="stat"><div class="k">Varsical</div><div class="v tnum">#16</div></div>
-      <div class="stat"><div class="k">In the bank</div><div class="v tnum">£0.5m</div></div>
+      <div class="stat"><div class="k">In the bank</div><div class="v tnum">£2.0m</div></div>
     </section>
     
     <div class="grid2">
       <div class="card"><h3>⭐ Recommended captain</h3>
         <p style="font-size:18px;margin:.2em 0"><b>Haaland</b> (MCI) · 6.3 proj</p>
         <p class="muted">Vice: B.Fernandes</p></div>
-      <div class="card"><h3>🔁 Transfer plan (GW4)</h3><div class="move"><span class="pill out">OUT Hughes</span><span class="pill in">IN Janelt</span><span class="gain">+5.1</span><div style="flex-basis:100%;font-size:12px;color:var(--muted)">+5.1 pts upgrade · net £+0.5m</div></div></div>
+      <div class="card"><h3>🔁 Transfers (GW4)</h3><p style="font-size:13px;margin:.2em 0 8px;color:#1f9d57;font-weight:700">✓ Done this week — both free transfers used · £2.0m ITB</p><div class="move" style="opacity:.9"><span class="pill out">OUT B.Fernandes</span><span class="pill in">✓ IN Cole Palmer</span><span class="gain">£12.0→£9.6</span><div style="flex-basis:100%;font-size:12px;color:var(--muted)">Completed. Utd were in the Man City derby (FDR 4); Palmer (CHE, form 7.0) hosts Hull.</div></div><div class="move" style="opacity:.9"><span class="pill out">OUT Anderson</span><span class="pill in">✓ IN Gakpo</span><span class="gain">£6.3→£7.2</span><div style="flex-basis:100%;font-size:12px;color:var(--muted)">Completed. Gakpo (LIV, form 9.3) hosts Fulham — your top projected pickup (10.5).</div></div><p class="muted" style="font-size:11.5px;margin:8px 0 0">No free transfers left this week (any further move costs −4). <b>Next up (GW5):</b> Igor Jesus → João Pedro (CHE) is the priority upgrade with your next FT.</p></div>
     </div>
+    <div class="grid2"><div class="card"><h3>🧩 Recommended formation</h3><p style="font-size:22px;margin:.1em 0 2px;font-weight:800">5-3-2<span style="font-size:13px;font-weight:700;color:#1f9d57"> +5.0 proj vs your current XI</span></p><p class="muted" style="font-size:11.5px;margin:0 0 8px">Bench: Palmer, Zubimendi, Hughes, Igor Jesus</p><div class="fshape rec"><div class="fhd"><span class="ff">5-3-2 ✅</span><span class="fpts tnum">59.5</span></div><div class="fxi">Raya &nbsp;<span class='fsep'>·</span>&nbsp; Gvardiol, Gabriel, Thomas, Lacroix, Diop &nbsp;<span class='fsep'>·</span>&nbsp; Gakpo, C.Palmer, E.Le Fée &nbsp;<span class='fsep'>·</span>&nbsp; Haaland, Calvert-Lewin</div></div><div class="fshape"><div class="fhd"><span class="ff">4-3-3</span><span class="fpts tnum">58.5</span></div><div class="fxi">Raya &nbsp;<span class='fsep'>·</span>&nbsp; Gvardiol, Gabriel, Thomas, Lacroix &nbsp;<span class='fsep'>·</span>&nbsp; Gakpo, C.Palmer, E.Le Fée &nbsp;<span class='fsep'>·</span>&nbsp; Haaland, Calvert-Lewin, Igor Jesus</div></div><div class="fshape"><div class="fhd"><span class="ff">4-4-2</span><span class="fpts tnum">58.2</span></div><div class="fxi">Raya &nbsp;<span class='fsep'>·</span>&nbsp; Gvardiol, Gabriel, Thomas, Lacroix &nbsp;<span class='fsep'>·</span>&nbsp; Gakpo, C.Palmer, E.Le Fée, Zubimendi &nbsp;<span class='fsep'>·</span>&nbsp; Haaland, Calvert-Lewin</div></div><div class="fshape"><div class="fhd"><span class="ff">5-4-1</span><span class="fpts tnum">57.2</span></div><div class="fxi">Raya &nbsp;<span class='fsep'>·</span>&nbsp; Gvardiol, Gabriel, Thomas, Lacroix, Diop &nbsp;<span class='fsep'>·</span>&nbsp; Gakpo, C.Palmer, E.Le Fée, Zubimendi &nbsp;<span class='fsep'>·</span>&nbsp; Haaland</div></div><div class="fshape"><div class="fhd"><span class="ff">3-4-3</span><span class="fpts tnum">56.5</span></div><div class="fxi">Raya &nbsp;<span class='fsep'>·</span>&nbsp; Gvardiol, Gabriel, Thomas &nbsp;<span class='fsep'>·</span>&nbsp; Gakpo, C.Palmer, E.Le Fée, Zubimendi &nbsp;<span class='fsep'>·</span>&nbsp; Haaland, Calvert-Lewin, Igor Jesus</div></div><div class="fshape cur"><div class="fhd"><span class="ff">Your current XI (3-4-3)</span><span class="fpts tnum">54.5</span></div><div class="fxi">Raya &nbsp;<span class='fsep'>·</span>&nbsp; Gabriel, Gvardiol, Lacroix &nbsp;<span class='fsep'>·</span>&nbsp; C.Palmer, Gakpo, Zubimendi, E.Le Fée &nbsp;<span class='fsep'>·</span>&nbsp; Haaland, Igor Jesus, Calvert-Lewin</div></div><p class="muted" style="font-size:11px;margin-top:8px">Switch from 3-4-3 to 5-3-2 for +5.0 projected points this week.</p></div><div class="card"><h3>🃏 Chip strategy</h3><p style="font-size:20px;margin:.1em 0;font-weight:800">Hold all chips</p><p class="muted" style="font-size:12.5px;margin:.3em 0 8px">Hold all chips — no double or blank gameweeks on the horizon. Save TC/Bench Boost for a double and Free Hit for a blank.</p><ul style="font-size:12.5px;margin:.2em 0;padding-left:18px;line-height:1.7"><li><b>Triple Captain</b> &amp; <b>Bench Boost</b> → a <b>double</b> gameweek</li><li><b>Free Hit</b> → a <b>blank</b> gameweek (or an injury crisis)</li><li><b>Wildcard</b> → a fixture swing / when 4+ transfers pile up</li></ul><p style="font-size:12px;margin:.5em 0 0"><b>Available:</b> Wildcard · Free Hit · Triple Captain · Bench Boost <span class="muted">(unused)</span></p></div></div>
+    <div class="card"><h3>🔎 Expert Watch (GW4)</h3><div class="xclubs"><span class="muted">Experts flagging: </span><span class="xclub">Hull City</span><span class="xclub">Chelsea</span><span class="xclub">Man City</span><span class="xclub">Brighton</span><span class="xclub">Liverpool</span><span class="xclub">Fulham</span></div><div class="xsrc"><a href="https://www.fantasyfootballscout.co.uk/fpl-gameweek-4-tips-best-players-predicted-line-ups-team-news-more-4" target="_blank" rel="noopener">Fantasy Football Scout</a><p>From Scout Picks to team news, all of our content and tips for Fantasy Premier League (FPL) Gameweek 4 will appear here. Following the rush to get Manchester City players last week, this time there’ll be a scramble to buy Chelsea assets. The Blues host Hull City in Gameweek 4, the first game in a mostly favourable 10-match run. Meanwhile, Brighton and Hove Albion face Coventry City, there’s the Manchester City derby to look forward to, and the last of Liverpool’s favourable opening fixtures sees the Reds host Fulham. Expect more chips to fly as Wildcards are deployed, Free Hits are activated and Triple Captains are lavished on Cole Palmer (£9.6m) and co.</p></div><h3 style="margin-top:16px">📋 This week's advice (GW4)</h3>
+<div style="font-size:12.5px;line-height:1.55">
+<p style="margin:.35em 0"><b>🎯 Fixture swing:</b> Chelsea (v Hull, H) &amp; Liverpool (v Fulham, H) have the best fixtures (both FDR 2) and start favourable runs. <b>Man Utd v Man City is a double FDR-4 derby</b> — don't stack it. Also tougher this week: Arsenal away at Sunderland, Forest away at Villa.</p>
+<p style="margin:.35em 0"><b>⭐ Top targets</b> (experts + your model agree): <b>Gakpo</b> (LIV £7.2, form 9.3 — your #1 projected pickup at 10.5), <b>Cole Palmer</b> (CHE £9.6), Isak (LIV £9.1), João Pedro (CHE £7.7), Szoboszlai (LIV £7.0), Rogers (CHE £7.6). FFH: three Chelsea players in the top four for predicted points; Isak &amp; Szoboszlai in the top 10.</p>
+<p style="margin:.35em 0"><b>©️ Captaincy:</b> <b>Haaland</b> remains the pick, but he's in the derby (FDR 4) — <b>Palmer</b> (v Hull) is the safer-fixture armband and Gakpo the in-form differential. Save the Triple Captain for a double gameweek.</p>
+<p style="margin:.35em 0"><b>🤕 Injuries / watch:</b> Mosquera (ARS, muscle), O'Reilly (MCI, back), Collins (calf), Gross (suspension risk — 2 bookings). <b>None are in your squad.</b></p>
+<p style="margin:.35em 0"><b>🃏 Chips:</b> all four still available (WC / FH / TC / BB). Experts note Wildcard &amp; Free Hit are popular to load Chelsea assets — but this early, with no double gameweek yet, hold them.</p>
+</div>
+<p style="font-size:12px;margin:.5em 0 0"><b>⚠️ Derby caution:</b> Haaland (C), Gvardiol, Anderson &amp; B.Fernandes are all in <b>Man Utd v Man City (FDR 4/4)</b> — a big concentration risk. → See the <b>Transfer plan (GW4)</b> card above for the recommended moves that fix this.</p>
+<p class="muted" style="font-size:11px;margin-top:10px">Free summaries from Fantasy Football Hub &amp; Fantasy Football Scout · club flags are a keyword heuristic. Sell prices use now-cost — confirm exact selling price on the FPL site. Advisory only; enter transfers yourself.</p></div>
     <div class="grid2">
       <div class="card"><h3>⚠️ Flagged in your squad</h3><div class="flag-list"><span style="background:none;color:var(--muted)">None flagged 👍</span></div></div>
       <div class="card"><h3>💡 Opportunities (not owned)</h3>
@@ -299,12 +343,12 @@ header.hero{box-shadow:0 12px 34px -14px rgba(0,0,0,.5)}
       <tr><td class="n">3</td><td class="n">49</td><td>Haaland</td><td class="n">8</td><td class="n">0</td><td class="n">6,520,978</td><td></td></tr><tr><td class="n">2</td><td class="n">85</td><td>Haaland</td><td class="n">10</td><td class="n">1</td><td class="n">6,409,651</td><td></td></tr><tr><td class="n">1</td><td class="n">32</td><td>Haaland</td><td class="n">5</td><td class="n">0</td><td class="n">8,317,710</td><td></td></tr></table></div>
     <footer><div>Built by the FPL Agent · <a href="https://github.com/Baldozz/fpl-agent">source</a></div>
     <div class="disc">Transfer suggestions use projected points and now-cost as sell price —
-    confirm on the FPL site before committing.</div></footer></div><div id="tab-team" class="pane"><div class="gwbar"><label for="gwsel">View gameweek:</label><select id="gwsel" class="gwsel"><option value="1">Gameweek 1</option><option value="2">Gameweek 2</option><option value="3" selected>Gameweek 3</option></select></div><div class="gwpane" data-gw="1">
+    confirm on the FPL site before committing.</div></footer></div><div id="tab-team" class="pane"><div class="gwbar"><label for="gwsel">View gameweek:</label><select id="gwsel" class="gwsel"><option value="1">Gameweek 1</option><option value="2">Gameweek 2</option><option value="3">Gameweek 3</option><option value="4" selected>Gameweek 4</option></select></div><div class="gwpane" data-gw="1">
     <header class="hero">
       <div>
         <div class="gw">Gameweek 1 · Points</div>
         <h1>BAildo</h1>
-        <div class="sub">Fabio Baldini · updated 2026-09-08 12:29 UTC</div>
+        <div class="sub">Fabio Baldini · updated 2026-09-08 12:15 UTC</div>
       </div>
       <div class="countdown">
         <div class="big tnum">32</div>
@@ -470,7 +514,7 @@ header.hero{box-shadow:0 12px 34px -14px rgba(0,0,0,.5)}
       <div>
         <div class="gw">Gameweek 2 · Points</div>
         <h1>BAildo</h1>
-        <div class="sub">Fabio Baldini · updated 2026-09-08 12:29 UTC</div>
+        <div class="sub">Fabio Baldini · updated 2026-09-08 12:15 UTC</div>
       </div>
       <div class="countdown">
         <div class="big tnum">85</div>
@@ -631,12 +675,12 @@ header.hero{box-shadow:0 12px 34px -14px rgba(0,0,0,.5)}
         href="https://github.com/Baldozz/fpl-agent">source on GitHub</a></div>
       <div class="disc">Live scores update as matches are played; provisional
         until the gameweek is finalised (bonus points, auto-subs).</div>
-    </footer></div><div class="gwpane active" data-gw="3">
+    </footer></div><div class="gwpane" data-gw="3">
     <header class="hero">
       <div>
         <div class="gw">Gameweek 3 · Points</div>
         <h1>BAildo</h1>
-        <div class="sub">Fabio Baldini · updated 2026-09-08 12:29 UTC</div>
+        <div class="sub">Fabio Baldini · updated 2026-09-08 12:15 UTC</div>
       </div>
       <div class="countdown">
         <div class="big tnum">49</div>
@@ -797,7 +841,154 @@ header.hero{box-shadow:0 12px 34px -14px rgba(0,0,0,.5)}
         href="https://github.com/Baldozz/fpl-agent">source on GitHub</a></div>
       <div class="disc">Live scores update as matches are played; provisional
         until the gameweek is finalised (bonus points, auto-subs).</div>
-    </footer></div></div><div id="tab-league" class="pane">
+    </footer></div><div class="gwpane active" data-gw="4">
+    <header class="hero">
+      <div>
+        <div class="gw">Gameweek 4 · Your team (planned)</div>
+        <h1>BAildo</h1>
+        <div class="sub">Fabio Baldini · projected pts · pre-deadline</div>
+      </div>
+      <div class="countdown"><div class="big tnum">54.5</div>
+        <div class="lbl">XI projected · 3-4-3</div></div>
+    </header>
+    <section class="stats"><div class="stat"><div class="k">Formation</div><div class="v tnum">3-4-3</div></div><div class="stat"><div class="k">In the bank</div><div class="v tnum">£2.0m</div></div><div class="stat"><div class="k">Squad value</div><div class="v tnum">£97.6m</div></div><div class="stat"><div class="k">Free transfers</div><div class="v tnum">0</div></div></section>
+    <div class="card"><h3>Your XI · 3-4-3</h3><div class="fpitch"><div class="frow">
+      <div class="fp">
+        <div class="kitwrap" data-pos="1"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_3_1-66.png"
+          alt="ARS" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Raya</div>
+        <div class="pt proj">5.0</div>
+        <div class="pmn"><span class="frm">form 5.0</span>
+          <span class="opp fdr3">SUN (A)</span></div>
+      </div></div><div class="frow">
+      <div class="fp">
+        <div class="kitwrap" data-pos="2"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_3-66.png"
+          alt="ARS" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Gabriel</div>
+        <div class="pt proj">5.0</div>
+        <div class="pmn"><span class="frm">form 5.0</span>
+          <span class="opp fdr3">SUN (A)</span></div>
+      </div>
+      <div class="fp">
+        <div class="kitwrap" data-pos="2"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_43-66.png"
+          alt="MCI" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Gvardiol</div>
+        <div class="pt proj">7.3</div>
+        <div class="pmn"><span class="frm">form 7.3</span>
+          <span class="opp fdr4">MUN (A)</span></div>
+      </div>
+      <div class="fp">
+        <div class="kitwrap" data-pos="2"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_8-66.png"
+          alt="CHE" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Lacroix</div>
+        <div class="pt proj">3.0</div>
+        <div class="pmn"><span class="frm">form 3.0</span>
+          <span class="opp fdr2">HUL (H)</span></div>
+      </div></div><div class="frow">
+      <div class="fp">
+        <div class="kitwrap" data-pos="3"><span class="band v">V</span><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_8-66.png"
+          alt="CHE" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">C.Palmer</div>
+        <div class="pt proj">7.0</div>
+        <div class="pmn"><span class="frm">form 7.0</span>
+          <span class="opp fdr2">HUL (H)</span></div>
+      </div>
+      <div class="fp">
+        <div class="kitwrap" data-pos="3"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_14-66.png"
+          alt="LIV" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Gakpo</div>
+        <div class="pt proj">9.3</div>
+        <div class="pmn"><span class="frm">form 9.3</span>
+          <span class="opp fdr2">FUL (H)</span></div>
+      </div>
+      <div class="fp">
+        <div class="kitwrap" data-pos="3"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_3-66.png"
+          alt="ARS" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Zubimendi</div>
+        <div class="pt proj">1.0</div>
+        <div class="pmn"><span class="frm">form 1.0</span>
+          <span class="opp fdr3">SUN (A)</span></div>
+      </div>
+      <div class="fp">
+        <div class="kitwrap" data-pos="3"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_56-66.png"
+          alt="SUN" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">E.Le Fée</div>
+        <div class="pt proj">4.3</div>
+        <div class="pmn"><span class="frm">form 4.3</span>
+          <span class="opp fdr4">ARS (H)</span></div>
+      </div></div><div class="frow">
+      <div class="fp cap">
+        <div class="kitwrap" data-pos="4"><span class="band">C</span><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_43-66.png"
+          alt="MCI" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Haaland</div>
+        <div class="pt proj">8.0</div>
+        <div class="pmn"><span class="frm">form 8.0</span>
+          <span class="opp fdr4">MUN (A)</span></div>
+      </div>
+      <div class="fp">
+        <div class="kitwrap" data-pos="4"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_17-66.png"
+          alt="NFO" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Igor Jesus</div>
+        <div class="pt proj">1.3</div>
+        <div class="pmn"><span class="frm">form 1.3</span>
+          <span class="opp fdr4">AVL (A)</span></div>
+      </div>
+      <div class="fp">
+        <div class="kitwrap" data-pos="4"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_2-66.png"
+          alt="LEE" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Calvert-Lewin</div>
+        <div class="pt proj">3.3</div>
+        <div class="pmn"><span class="frm">form 3.3</span>
+          <span class="opp fdr2">NEW (H)</span></div>
+      </div></div></div>
+      <h3 style="margin-top:14px">Bench</h3><div class="benchbar">
+      <div class="fp">
+        <div class="kitwrap" data-pos="1"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_40_1-66.png"
+          alt="IPS" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Palmer</div>
+        <div class="pt proj">0.0</div>
+        <div class="pmn"><span class="frm">form 0.0</span>
+          <span class="opp fdr3">CRY (A)</span></div>
+      </div>
+      <div class="fp">
+        <div class="kitwrap" data-pos="3"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_31-66.png"
+          alt="CRY" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Hughes</div>
+        <div class="pt proj">0.3</div>
+        <div class="pmn"><span class="frm">form 0.3</span>
+          <span class="opp fdr2">IPS (H)</span></div>
+      </div>
+      <div class="fp">
+        <div class="kitwrap" data-pos="2"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_40-66.png"
+          alt="IPS" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Diop</div>
+        <div class="pt proj">2.3</div>
+        <div class="pmn"><span class="frm">form 2.3</span>
+          <span class="opp fdr3">CRY (A)</span></div>
+      </div>
+      <div class="fp">
+        <div class="kitwrap" data-pos="2"><img src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_9-66.png"
+          alt="COV" loading="lazy"
+          onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
+        <div class="nm">Thomas</div>
+        <div class="pt proj">5.0</div>
+        <div class="pmn"><span class="frm">form 5.0</span>
+          <span class="opp fdr2">BHA (H)</span></div>
+      </div></div><p class="muted" style="font-size:11.5px;margin-top:10px">✓ Palmer &amp; Gakpo are in — your actual entered team (3-4-3). The Dashboard Formation card suggests <b>5-3-2</b> (+5.0 proj). Your entered team becomes public after the GW4 deadline (Sat 12 Sep 13:30 BST).</p></div></div></div><div id="tab-league" class="pane">
     <header class="hero"><div>
       <div class="gw">Gameweek 3 · League</div>
       <h1>Varsical</h1>

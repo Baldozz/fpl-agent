@@ -52,6 +52,73 @@ def _prepare_players(args, boot, gw, season_started):
         use_cache=not args.no_cache)
 
 
+_POS_ABBR = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
+
+
+def _strategy_and_planned(boot, d, fixtures):
+    """Build formation + chip advice and the planned-GW pitch data. Best-effort."""
+    from . import strategy as S
+    formation_rec = chip_rec = None
+    planned = []
+    meta = {}
+    try:
+        sps = [S.SquadPlayer(p.name, _POS_ABBR.get(p.pos, "MID"),
+                             float(p.projected), p.team_name, key=str(p.id))
+               for p in d.current]
+        formation_rec = S.best_formation(sps) if sps else None
+        start_keys = {sp.key for sp in formation_rec.xi} if formation_rec else set()
+
+        dgw, bgw = S.detect_dgw_bgw(fixtures, d.upcoming_gw)
+        chip_rec = S.chip_advice(upcoming_gw=d.upcoming_gw, dgw_gws=dgw, bgw_gws=bgw)
+
+        tcode = {t["id"]: t["code"] for t in boot["teams"]}
+        tshort = {t["id"]: t["short_name"] for t in boot["teams"]}
+        opp = {}
+        for f in fixtures:
+            if f.get("event") == d.upcoming_gw:
+                opp[f["team_h"]] = (tshort[f["team_a"]], "H", f.get("team_h_difficulty"))
+                opp[f["team_a"]] = (tshort[f["team_h"]], "A", f.get("team_a_difficulty"))
+        cap_id = d.captain.id if d.captain else None
+        vice_id = d.vice.id if d.vice else None
+        for p in d.current:
+            o = opp.get(p.team, ("", "", None))
+            planned.append({
+                "name": p.name, "pos": p.pos, "code": tcode.get(p.team, 0),
+                "team": p.team_name, "form": f"{p.form:.1f}", "proj": f"{p.projected:.1f}",
+                "opp": o[0], "ha": o[1], "fdr": o[2],
+                "is_captain": p.id == cap_id, "is_vice": p.id == vice_id,
+                "on_bench": str(p.id) not in start_keys})
+        meta = {
+            "manager": d.manager,
+            "formation": formation_rec.formation if formation_rec else "",
+            "xi_points": formation_rec.points if formation_rec else None,
+            "stats": [("Formation", formation_rec.formation if formation_rec else "—"),
+                      ("In the bank", f"£{d.bank/10:.1f}m"),
+                      ("Captain", d.captain.name if d.captain else "—")],
+            "note": ("Agent's projection-optimal XI (form × fixtures). Your actual "
+                     "entered team becomes public after the deadline.")}
+    except Exception as e:
+        print(f"[strategy] skipped: {e}")
+    return formation_rec, chip_rec, planned, meta
+
+
+def _expert_intel(args, gw):
+    """Best-effort free expert-site intel; never breaks the run."""
+    if getattr(args, "no_experts", False):
+        return None
+    try:
+        from . import experts
+        intel = experts.weekly_intel(gw, use_cache=not args.no_cache)
+        if intel.ok:
+            print(f"[experts] {sum(s.ok for s in intel.sources)}/"
+                  f"{len(intel.sources)} source(s), "
+                  f"{len(intel.target_clubs)} club flag(s)")
+        return intel
+    except Exception as e:
+        print(f"[experts] skipped: {e}")
+        return None
+
+
 def _run_site(args, boot, cur, nxt, gw, season_started) -> int:
     """One unified page: Dashboard + My Team (live, GW switcher) + League tabs."""
     team_id = live.resolve_team_id(args.team_id)
@@ -88,8 +155,13 @@ def _run_site(args, boot, cur, nxt, gw, season_started) -> int:
     headlines = (news.relevant_headlines(
         all_headlines, {p.name for p in d.current},
         {t["name"] for t in boot["teams"]}) if all_headlines else [])
+    fixtures = api.fixtures(use_cache=not args.no_cache)
+    formation_rec, chip_rec, planned, planned_meta = _strategy_and_planned(boot, d, fixtures)
     page = render_site(d, live_by_gw, lg, headlines, available, current_gw,
-                       deadline, players=players)
+                       deadline, players=players,
+                       expert_intel=_expert_intel(args, gw),
+                       formation_rec=formation_rec, chip_rec=chip_rec,
+                       planned_players=planned, planned_meta=planned_meta)
     print(f"Unified site: GW{gw} plan (C {d.captain.name if d.captain else '—'}), "
           f"{len(available)} live GW(s), league '{lg.name}' ({len(lg.rows)})")
     if args.html or args.save:
@@ -119,8 +191,12 @@ def _run_dashboard(args, boot, cur, nxt, gw, season_started) -> int:
           f"{len(d.moves)} transfer(s), {len(d.flagged)} flagged")
     if args.html or args.save:
         DOCS.mkdir(exist_ok=True)
+        fixtures = api.fixtures(use_cache=not args.no_cache)
+        formation_rec, chip_rec, _, _ = _strategy_and_planned(boot, d, fixtures)
         (DOCS / "index.html").write_text(
-            render_dashboard_html(d, headlines))
+            render_dashboard_html(d, headlines,
+                                  expert_intel=_expert_intel(args, gw),
+                                  formation_rec=formation_rec, chip_rec=chip_rec))
         print(f"[written] {DOCS/'index.html'} (dashboard)")
     return 0
 
@@ -200,6 +276,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="gameweeks of fixtures to weight (default 1)")
     ap.add_argument("--no-news", action="store_true")
     ap.add_argument("--no-cache", action="store_true")
+    ap.add_argument("--no-experts", action="store_true",
+                    help="skip fetching free expert-site (FFH/FFScout) intel")
     ap.add_argument("--save", action="store_true",
                     help="write reports/GW<n>.md")
     ap.add_argument("--html", action="store_true",
