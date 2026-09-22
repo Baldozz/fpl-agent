@@ -26,6 +26,7 @@ class LeagueRow:
     total: int
     gw_points: int
     team: LiveTeam | None = None   # filled if we fetch each rival's squad
+    chips: dict[str, list[int]] = field(default_factory=dict)  # chip -> GWs used
     # Squad-strength scoring (filled by attach_power): a forward-looking rating
     # of how good the SQUAD is right now, independent of accumulated points.
     power: float = 0.0             # Σ projected pts over XI (+ bench depth bonus)
@@ -84,6 +85,27 @@ def fetch_standings(league_id: int, max_members: int = 60) -> tuple[str, list[Le
     return name, rows[:max_members]
 
 
+# FPL chip ids -> short column labels. Each is available once per half-season
+# (GW1-19, GW20-38), so a manager can legitimately show two gameweeks per chip.
+CHIP_LABELS = {"wildcard": "WC", "freehit": "FH", "bboost": "BB", "3xc": "TC"}
+
+
+def fetch_chips(entry_id: int) -> dict[str, list[int]]:
+    """Which chips a manager has already played, as {chip: [gameweeks]}.
+
+    From the public ``entry/{id}/history/`` endpoint. Empty dict on failure so a
+    404/blip costs one manager's chips, not the whole league page.
+    """
+    try:
+        data = _get(f"{BASE}/entry/{entry_id}/history/")
+    except Exception:
+        return {}
+    used: dict[str, list[int]] = {}
+    for c in data.get("chips", []):
+        used.setdefault(c["name"], []).append(c["event"])
+    return {k: sorted(v) for k, v in used.items()}
+
+
 def fetch_league(league_id: int, gw: int, bootstrap: dict,
                  with_teams: bool = True, max_teams: int = 30) -> League:
     """Standings plus (optionally) each rival's live team for the gameweek."""
@@ -96,6 +118,7 @@ def fetch_league(league_id: int, gw: int, bootstrap: dict,
                 row.team = fetch_live_team(row.entry_id, gw, bootstrap)
             except Exception:
                 row.team = None
+            row.chips = fetch_chips(row.entry_id)
         with ThreadPoolExecutor(max_workers=8) as pool:
             list(pool.map(one, rows[:max_teams]))
     return League(league_id=league_id, name=name, gw=gw, rows=rows)

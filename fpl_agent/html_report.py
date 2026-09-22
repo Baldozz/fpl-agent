@@ -539,6 +539,15 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 
 
 LEAGUE_CSS = """
+/* Chips-used columns */
+.chip-c{text-align:center;white-space:nowrap;padding-left:4px;padding-right:4px}
+th.chip-c{font-size:10px;letter-spacing:.04em}
+.chipgw{display:inline-block;min-width:19px;padding:1px 4px;margin:0 1px;
+  border-radius:6px;font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;
+  background:rgba(242,169,0,.18);color:#8a6a00}
+.chipgw.live{background:var(--magenta);color:#fff}
+@media(max-width:560px){.chip-c{display:none}}
+
 /* Insight strip */
 .insight{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:16px 0 4px}
 @media(max-width:760px){.insight{grid-template-columns:1fr}}
@@ -827,6 +836,26 @@ def _rival_squad(team, players: dict | None) -> str:
             f'<div class="rcol"><div class="rhd">Bench</div>{bench}</div></div>')
 
 
+def _chip_cells(row, gw: int) -> str:
+    """One cell per chip: the gameweek it was played in, or a dash if unused.
+
+    A chip played THIS gameweek is highlighted — that's the one that changes how
+    to read a rival's live score (bench boost/triple captain inflate it, free
+    hit/wildcard mean the squad is a one-off).
+    """
+    from .league import CHIP_LABELS
+    out = ""
+    for chip in CHIP_LABELS:
+        gws = (row.chips or {}).get(chip, [])
+        if not gws:
+            out += '<td class="chip-c"><span class="muted">–</span></td>'
+            continue
+        out += ('<td class="chip-c">' + "".join(
+            f'<span class="chipgw{" live" if g == gw else ""}">{g}</span>'
+            for g in gws) + '</td>')
+    return out
+
+
 def render_league_html(league, full_document: bool = True,
                        players: dict | None = None) -> str:
     """Varsical standings + squad-power rating + expandable rival squads."""
@@ -880,10 +909,11 @@ def render_league_html(league, full_document: bool = True,
             f'<span><b>{_esc(r.entry_name)}</b><br>'
             f'<span class="muted" style="font-size:12px">{_esc(r.manager)}</span></span></td>'
             f'<td>{_esc(cap)}</td><td class="hide-sm">{_esc(_formation_of(r.team))}</td>'
+            f'{_chip_cells(r, league.gw)}'
             f'<td class="n">{r.gw_points}</td><td class="n"><b>{r.total}</b></td>'
             f'<td>{power_cell}</td></tr>')
         if r.team:
-            rows += (f'<tr class="detail" id="t{r.entry_id}"><td colspan="8">'
+            rows += (f'<tr class="detail" id="t{r.entry_id}"><td colspan="12">'
                      f'{_rival_squad(r.team, players)}</td></tr>')
 
     nav = ('<div class="btnrow"><a class="btn" href="./index.html">← Dashboard</a>'
@@ -901,10 +931,18 @@ def render_league_html(league, full_document: bool = True,
       <b>Squad Power</b> rates each manager's current 15 by projected points
       (form × fixtures × availability, bench counted at 15%) — a live read on who
       has the strongest team, independent of points banked.
+      <b>WC/FH/BB/TC</b> show the gameweek each manager played their Wildcard,
+      Free Hit, Bench Boost or Triple Captain (one of each per half-season);
+      a highlighted number means it's active THIS gameweek.
       <b>Tap any row</b> to see that manager's full squad.</p>
     <div class="card" style="overflow-x:auto;padding:6px 8px">
       <table class="ltable"><thead><tr><th class="n">#</th><th></th><th>Team / Manager</th>
-      <th>Captain</th><th class="hide-sm">Form.</th><th class="n">GW</th>
+      <th>Captain</th><th class="hide-sm">Form.</th>
+      <th class="chip-c" title="Wildcard">WC</th>
+      <th class="chip-c" title="Free Hit">FH</th>
+      <th class="chip-c" title="Bench Boost">BB</th>
+      <th class="chip-c" title="Triple Captain">TC</th>
+      <th class="n">GW</th>
       <th class="n">Total</th><th>Squad Power</th></tr></thead><tbody>{rows}</tbody></table></div>
     <footer><div>Live from the FPL API · <a href="https://github.com/Baldozz/fpl-agent">source</a></div>
     <div class="disc">Squad Power is a model projection, not FPL's own score;
