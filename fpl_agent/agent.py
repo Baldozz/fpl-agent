@@ -111,9 +111,10 @@ def build_digest(team_id: int, bootstrap: dict, players: dict[int, Player],
     current = [players[i] for i in squad_ids if i in players]
     current_set = set(squad_ids)
 
-    # Captain from outfield players only (never a goalkeeper).
+    # Captain from outfield players only (never a goalkeeper), ranked by
+    # projection + attacking ceiling — the armband wants hauls, not averages.
     outfield = sorted((p for p in current if p.pos != 1),
-                      key=lambda p: p.projected, reverse=True)
+                      key=model_mod.captain_score, reverse=True)
     captain = outfield[0] if outfield else None
     vice = outfield[1] if len(outfield) > 1 else None
 

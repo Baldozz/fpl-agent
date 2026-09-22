@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .model import Player
+from .model import Player, captain_score
 
 BUDGET = 1000  # £100.0m in tenths
 # Per-started-forward attacking-ceiling bonus (tips near-ties to 3-4-3). Raise
@@ -201,7 +201,9 @@ def build_squad(players: list[Player],
     else:
         chosen = optimize_greedy(list(players))
         xi = _pick_xi(chosen)
-    xi_sorted = sorted(xi, key=lambda p: p.projected, reverse=True)
+    # Armband by ceiling, not mean (see model.captain_score); keepers score -1
+    # there so they are never captained.
+    xi_sorted = sorted(xi, key=captain_score, reverse=True)
     captain, vice = xi_sorted[0], xi_sorted[1]
     bench = _order_bench(chosen, xi)
     return Squad(squad=chosen, xi=xi, bench=bench, captain=captain, vice=vice)

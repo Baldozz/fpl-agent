@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -m fpl_agent --horizon 3 --no-grok)",
+      "Bash(curl -s -X POST --max-time 300 http://localhost:8765/refresh)"
+    ]
+  }
+}

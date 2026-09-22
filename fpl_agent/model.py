@@ -261,6 +261,35 @@ _DC_THRESHOLD = {2: 10, 3: 12, 4: 12}   # defensive contributions for +2
 UNDERLYING_WEIGHT = 0.55
 _MIN_MINUTES_FOR_XG = 180
 
+# The armband DOUBLES a score, so it should chase the fat right tail, not the
+# mean: 2x a defender's likely 6 is worth less than the chance of 2x a striker's
+# 15. This weights a player's attacking upside (the only route to a haul) on top
+# of his projection when ranking captain candidates. Raise for a more
+# haul-hunting armband, 0 to caption purely on expected points.
+CAPTAIN_CEILING_WEIGHT = 0.8
+
+
+def attacking_upside(p: Player) -> float:
+    """Expected points per 90 from GOALS AND ASSISTS only — the haul-producing
+    part of a score. Clean sheets, defensive contributions and appearance points
+    are excluded: they cap out low and rarely double into a big captain week."""
+    per90 = p.xg90 * _GOAL_PTS[p.pos] + p.xa90 * 3
+    if p.pen_order == 1 and p.pos != 1:
+        per90 += 0.08 * _GOAL_PTS[p.pos]
+    return per90 * min(p.start_prob, 1.0)
+
+
+def captain_score(p: Player) -> float:
+    """Ranking key for the armband: projection + weighted attacking ceiling.
+
+    Keepers are never captained. Without the ceiling term a defender with a
+    cushy fixture outranks a premium striker with a hard one (Gabriel 7.9 vs
+    Haaland 7.4 in GW6) — true on average, wrong for a 2x multiplier.
+    """
+    if p.pos == 1:
+        return -1.0
+    return p.projected + CAPTAIN_CEILING_WEIGHT * attacking_upside(p)
+
 
 def _underlying_points(p: Player) -> float:
     """Expected points per full match from underlying stats (xG, xA, xGC,

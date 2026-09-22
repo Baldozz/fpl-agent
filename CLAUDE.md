@@ -137,6 +137,12 @@ xAI's live-search endpoint is unavailable — keep that graceful fallback.
   contributions, saves, bonus rate, 1st-choice pens) is blended in at
   `UNDERLYING_WEIGHT` (0.55). Stops luck-driven hauls (e.g. a DEF goal from 0.2 xG)
   from topping the captaincy.
+- **Captaincy is a separate ranking:** `model.captain_score` = projection +
+  `CAPTAIN_CEILING_WEIGHT` × `attacking_upside` (xG/xA-derived points only, pens
+  included; GKs return -1 so they're never captained). Used by
+  `agent.build_digest` AND `optimizer.build_squad`. Projection alone captains a
+  cheap defender with a cushy fixture over a premium striker with a hard one —
+  correct on average, wrong for a 2× multiplier that wants the right tail.
 - `_fdr_multiplier(fdr)` scales by fixture difficulty (1 easy … 5 hard).
 - `_mismatch_multiplier(team_strength, opp_strength)` favours the stronger side of
   a fixture (top vs bottom) using the strength gap; dial via `MISMATCH_WEIGHT`.
