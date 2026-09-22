@@ -38,7 +38,7 @@ for account automation (which needs their credentials and carries account risk).
 | `transfers.py` | Transfer recommender vs the ACTUAL squad: `suggest_transfers` (budget/club-legal, flagged-first), `flagged_players`, `opportunities`. |
 | `league.py` | Private-league monitor: paginated standings + each rival's live team. |
 | `live.py` | Actual squad + live scores; also `fetch_history` (tracker) and `fetch_squad_ids`. `fetch_my_team` reads the AUTHENTICATED `my-team` view (pending transfers, bank, FT count) by reusing fpl_mcp's `~/.fpl-mcp` credentials; falls back to public last-deadline picks (CI). `agent._done_transfers` diffs it vs last picks → shown as ✓ DONE; no suggestions once FTs are used. |
-| `serve.py` | `--serve`: localhost:8765 server for `docs/`; `POST /refresh` rebuilds the site (the page's ↻ Refresh button). |
+| `serve.py` | `--serve`: localhost:8765 server for `docs/`; `POST /refresh` rebuilds the site (the page's ↻ Refresh button, and its auto-refresh-on-open when `<body data-built>` is >10 min old). Both paths are gated on `location.hostname` being localhost — on Pages there is no server, and an auto-retry against a 405 would loop. A sessionStorage cooldown (2 min) stops a failed/no-op rebuild from re-triggering itself. |
 | `notify.py` | WhatsApp: `--mode deadline` (2h window) and `--mode monitor` (injury watch, deduped via `state/alerts.json`). |
 
 ## Pages / CLI modes

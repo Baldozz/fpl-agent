@@ -1116,28 +1116,56 @@ function toast(msg,err){
 }
 (function(){try{var m=sessionStorage.getItem('fplRefreshed');
   if(m){sessionStorage.removeItem('fplRefreshed');toast(m);}}catch(e){}})();
-if(rbtn)rbtn.onclick=function(){
-  if(location.protocol==='file:'){
-    alert('Refresh fetches new data via the local server. Run: python3 -m fpl_agent --serve  then open http://localhost:8765');
+// Only a local --serve run can rebuild; on a static host (Pages) POST /refresh
+// would 405 and an auto-retry would loop, so gate everything on localhost.
+function servedLocally(){
+  return (location.protocol==='http:'||location.protocol==='https:')
+    && (location.hostname==='localhost'||location.hostname==='127.0.0.1');
+}
+function doRefresh(auto){
+  if(!servedLocally()){
+    if(!auto)alert('Refresh fetches new data via the local server. Run: python3 -m fpl_agent --serve  then open http://localhost:8765');
     return;
   }
   var ov=document.createElement('div');ov.className='rov';
-  ov.innerHTML='<div class="rbox"><div class="rspin"></div><b>Fetching latest FPL data…</b>'
-    +'<span id="rsec" class="muted">0s</span></div>';
+  ov.innerHTML='<div class="rbox"><div class="rspin"></div><b>'
+    +(auto?'Data was out of date — refreshing…':'Fetching latest FPL data…')
+    +'</b><span id="rsec" class="muted">0s</span></div>';
   document.body.appendChild(ov);
   var t0=Date.now(),tick=setInterval(function(){
     var e=document.getElementById('rsec');if(e)e.textContent=Math.round((Date.now()-t0)/1000)+'s';},500);
-  rbtn.disabled=true;rbtn.classList.add('spin');
+  if(rbtn){rbtn.disabled=true;rbtn.classList.add('spin');}
   fetch('refresh',{method:'POST',cache:'no-store'}).then(function(r){return r.json();})
     .then(function(j){
-      clearInterval(tick);ov.remove();rbtn.disabled=false;rbtn.classList.remove('spin');
+      clearInterval(tick);ov.remove();
+      if(rbtn){rbtn.disabled=false;rbtn.classList.remove('spin');}
       if(!j.ok){toast('Refresh failed: '+(j.log||'').slice(-300),true);return;}
       var sum=(j.log||'').split('\\n').filter(function(l){return l.indexOf('Unified site')===0;})[0]||'';
-      try{sessionStorage.setItem('fplRefreshed','✓ Refreshed '+new Date().toLocaleTimeString().slice(0,5)+(sum?' — '+sum.replace('Unified site: ',''):''));}catch(e){}
+      try{sessionStorage.setItem('fplRefreshed',(auto?'✓ Auto-refreshed ':'✓ Refreshed ')
+        +new Date().toLocaleTimeString().slice(0,5)+(sum?' — '+sum.replace('Unified site: ',''):''));}catch(e){}
       location.reload();
     })
-    .catch(function(){clearInterval(tick);ov.remove();location.reload();});  // static host (Pages)
-};
+    .catch(function(){clearInterval(tick);ov.remove();
+      if(rbtn){rbtn.disabled=false;rbtn.classList.remove('spin');}
+      if(!auto)location.reload();});
+}
+if(rbtn)rbtn.onclick=function(){doRefresh(false);};
+// Auto-refresh on open when the build is stale. The cooldown is what stops a
+// failed or no-op rebuild (same timestamp again) from looping forever.
+(function(){
+  var STALE=600,COOLDOWN=120;
+  if(!servedLocally())return;
+  var built=parseInt(document.body.getAttribute('data-built')||'0',10);
+  if(!built)return;
+  var age=Date.now()/1000-built;
+  if(age<STALE)return;
+  try{
+    var last=parseInt(sessionStorage.getItem('fplAutoAt')||'0',10);
+    if(Date.now()/1000-last<COOLDOWN)return;
+    sessionStorage.setItem('fplAutoAt',String(Math.round(Date.now()/1000)));
+  }catch(e){}
+  doRefresh(true);
+})();
 function showTab(id){
   document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('active',p.id===id);});
   document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.pane===id);});
@@ -1234,7 +1262,8 @@ def render_site(d, live_by_gw: dict, league, headlines, available_gws: list[int]
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>FPL Agent — {_esc(d.entry_name or 'My Team')}</title>
 <style>{css}</style></head>
-<body>{body}<script>{js}</script></body></html>"""
+<body data-built="{int(datetime.now(timezone.utc).timestamp())}">{body}
+<script>{js}</script></body></html>"""
 
 
 def render_html(squad: Squad, gw: int, deadline: str, season_started: bool,
