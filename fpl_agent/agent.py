@@ -63,6 +63,8 @@ class Digest:
     captain: Player | None = None
     vice: Player | None = None
     moves: list[Move] = field(default_factory=list)
+    done: list[tuple[Player, Player]] = field(default_factory=list)  # (out, in) made this GW
+    free_transfers: int = 1
     flagged: list[Player] = field(default_factory=list)
     opportunities: list[Player] = field(default_factory=list)
     bank: int = 0                                          # tenths of £m
@@ -72,6 +74,27 @@ class Digest:
         return self.history[-1] if self.history else None
 
 
+def _done_transfers(team_id: int, current_gw: int, squad_ids: list[int],
+                    players: dict[int, Player]) -> list[tuple[Player, Player]]:
+    """Transfers made since the last deadline: diff the pending squad against
+    the last-deadline picks (FPL's public transfer log only updates after the
+    deadline). Outs and ins are paired by position."""
+    try:
+        old = [p["element"] for p in live._get_shared(
+            f"{live.BASE}/entry/{team_id}/event/{current_gw}/picks/")["picks"]]
+    except Exception:
+        return []
+    outs = [players[i] for i in old if i not in squad_ids and i in players]
+    ins = [players[i] for i in squad_ids if i not in old and i in players]
+    pairs = []
+    for o in outs:
+        i = next((x for x in ins if x.pos == o.pos), None)
+        if i:
+            ins.remove(i)
+            pairs.append((o, i))
+    return pairs
+
+
 def build_digest(team_id: int, bootstrap: dict, players: dict[int, Player],
                  current_gw: int, upcoming_gw: int, deadline: str,
                  league_id: int | None = None, free_transfers: int = 1) -> Digest:
@@ -79,6 +102,12 @@ def build_digest(team_id: int, bootstrap: dict, players: dict[int, Player],
     entry = live._get(f"{live.BASE}/entry/{team_id}/")
     history = live.fetch_history(team_id, bootstrap)
     squad_ids, bank = live.fetch_squad_ids(team_id, current_gw)
+    # Real free-transfer count from the authenticated view, when we have it.
+    t = (live.LAST_MY_TEAM or {}).get("transfers") or {}
+    if t.get("limit") is not None:
+        free_transfers = max(0, t["limit"] - t.get("made", 0))
+    done = _done_transfers(team_id, current_gw, squad_ids, players) \
+        if t.get("made") else []
     current = [players[i] for i in squad_ids if i in players]
     current_set = set(squad_ids)
 
@@ -113,6 +142,7 @@ def build_digest(team_id: int, bootstrap: dict, players: dict[int, Player],
         league_name=league_name, league_rank=league_rank,
         current=current, captain=captain, vice=vice,
         moves=moves, flagged=flagged, opportunities=opps, bank=bank,
+        done=done, free_transfers=free_transfers,
     )
 
 
@@ -124,9 +154,11 @@ def whatsapp_summary(d: Digest) -> str:
                      + (f", (VC) {d.vice.name}" if d.vice else ""))
     if d.flagged:
         parts.append("⚠️ Out/doubt: " + ", ".join(p.name for p in d.flagged[:4]))
+    for o, i in d.done:
+        parts.append(f"✅ Done: {o.name} → {i.name}")
     if d.moves:
         for m in d.moves:
             parts.append(f"↔️ {m.out.name} → {m.in_.name} (+{m.gain:.1f})")
-    else:
+    elif not d.done:
         parts.append("No transfer needed — hold.")
     return " | ".join(parts)

@@ -75,10 +75,31 @@ def _scout_url(gw: int) -> str:
             f"best-players-predicted-line-ups-team-news-more-{gw}")
 
 
-def _sources(gw: int) -> list[tuple[str, str]]:
+_SCOUT_FEED = "https://www.fantasyfootballscout.co.uk/feed/"
+# Preferred FFScout weekly articles, best first (slugs change year to year and
+# now carry a /YYYY/MM/DD/ prefix, so find them via the RSS feed, not a guess).
+_SCOUT_PREFS = ("scout-squad", "best-captain", "scout-picks", "tips")
+
+
+def _scout_feed_url(gw: int, use_cache: bool = True) -> str | None:
+    feed = _fetch(_SCOUT_FEED, use_cache=use_cache)
+    if not feed:
+        return None
+    links = re.findall(r"<link>(https?://[^<]+)</link>", feed)
+    tag = re.compile(rf"gameweek-{gw}(?!\d)")
+    week = [u for u in links if tag.search(u)]
+    for pref in _SCOUT_PREFS:
+        hit = next((u for u in week if pref in u), None)
+        if hit:
+            return hit
+    return None
+
+
+def _sources(gw: int, use_cache: bool = True) -> list[tuple[str, str]]:
     return [
         ("Fantasy Football Hub", _HEADLINE_URL),
-        ("Fantasy Football Scout", _scout_url(gw)),
+        ("Fantasy Football Scout",
+         _scout_feed_url(gw, use_cache) or _scout_url(gw)),
     ]
 
 
@@ -186,7 +207,7 @@ def weekly_intel(gw: int, *, use_cache: bool = True) -> WeeklyIntel:
     """Fetch + distil this gameweek's expert intel. Never raises."""
     sources: list[SourceIntel] = []
     combined: dict[str, float] = {}
-    for name, url in _sources(gw):
+    for name, url in _sources(gw, use_cache):
         page = _fetch(url, use_cache=use_cache)
         if not page:
             sources.append(SourceIntel(name, url, ok=False))

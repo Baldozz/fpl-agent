@@ -8,8 +8,12 @@ no auth needed here.
 """
 from __future__ import annotations
 
+import json
 import os
+import re
+import threading
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import requests
 
@@ -83,10 +87,43 @@ def resolve_team_id(explicit: int | None = None) -> int | None:
     return None
 
 
+_SESSION = requests.Session()           # keep-alive across the ~70 calls
+_MEMO: dict[str, object] = {}
+_LOCKS: dict[str, threading.Lock] = {}
+_LOCKS_GUARD = threading.Lock()
+_DISK = Path(__file__).resolve().parent.parent / "data" / "live"
+
+
 def _get(url: str):
-    r = requests.get(url, headers=HEADERS, timeout=30)
+    r = _SESSION.get(url, headers=HEADERS, timeout=30)
     r.raise_for_status()
     return r.json()
+
+
+def _get_shared(url: str, immutable: bool = False):
+    """``_get`` memoised for this process (one download even when many threads
+    ask at once). ``immutable`` data (finished gameweeks) is also kept on disk."""
+    with _LOCKS_GUARD:
+        lock = _LOCKS.setdefault(url, threading.Lock())
+    with lock:
+        if url in _MEMO:
+            return _MEMO[url]
+        disk = _DISK / (re.sub(r"[^a-z0-9]+", "_", url.split("/api/")[-1]) + "json")
+        if immutable and disk.exists():
+            data = json.loads(disk.read_text())
+        else:
+            data = _get(url)
+            if immutable:
+                _DISK.mkdir(parents=True, exist_ok=True)
+                disk.write_text(json.dumps(data))
+        _MEMO[url] = data
+        return data
+
+
+def _gw_final(bootstrap: dict, gw: int) -> bool:
+    """True once a gameweek's points are finalised (safe to cache forever)."""
+    ev = next((e for e in bootstrap.get("events", []) if e["id"] == gw), {})
+    return bool(ev.get("finished") and ev.get("data_checked"))
 
 
 @dataclass
@@ -112,7 +149,8 @@ def fetch_history(team_id: int, bootstrap: dict) -> list[GWHistory]:
         gw = r["event"]
         cap = ""
         try:
-            picks = _get(f"{BASE}/entry/{team_id}/event/{gw}/picks/")
+            picks = _get_shared(f"{BASE}/entry/{team_id}/event/{gw}/picks/",
+                                _gw_final(bootstrap, gw))
             cid = next((p["element"] for p in picks["picks"] if p["is_captain"]), None)
             cap = name.get(cid, "")
         except Exception:
@@ -126,8 +164,69 @@ def fetch_history(team_id: int, bootstrap: dict) -> list[GWHistory]:
     return rows
 
 
+LAST_MY_TEAM: dict | None = None   # last authenticated my-team payload
+
+
+def _encrypted_store_readable() -> bool:
+    """True only if fpl_mcp's ENCRYPTED credential store decrypts.
+
+    Its key is derived from machine identifiers (MAC/hostname/user), so the
+    store can silently become unreadable when those change. fpl_mcp then falls
+    back to the plaintext ``~/.fpl-mcp/config.json`` token, which is typically a
+    long-since-rotated one. PingOne rotates refresh tokens on every use and can
+    revoke the whole token family if a consumed one is replayed — so never
+    exchange a credential that didn't come from the encrypted store.
+    """
+    try:
+        import logging
+        from fpl_mcp.fpl.credential_manager import CredentialManager
+        logging.getLogger("fpl_mcp").setLevel(logging.CRITICAL)
+        cm = CredentialManager()
+        cm._decrypt_data(cm._encrypted_file.read_bytes())
+        return True
+    except Exception:
+        return False
+
+
+def fetch_my_team(team_id: int) -> dict | None:
+    """Authenticated ``my-team`` payload — the squad as it stands NOW, including
+    transfers made since the last deadline. Reuses the fantasy-pl-mcp credential
+    store (~/.fpl-mcp, refresh token rotated + persisted by its auth manager).
+    Returns None when fpl_mcp isn't installed or auth is unusable (e.g. in CI),
+    in which case callers fall back to the public last-deadline picks."""
+    global LAST_MY_TEAM
+    if not _encrypted_store_readable():
+        print("[my-team] skipped: fpl_mcp's encrypted credentials can't be read "
+              "(re-run the MCP update_fpl_credentials/setup). Using last-deadline "
+              "picks — pending transfers won't show.")
+        return None
+    try:
+        import asyncio
+        import logging
+        from fpl_mcp.fpl.auth_manager import FPLAuthManager
+        logging.getLogger("fpl_mcp").setLevel(logging.ERROR)
+        auth = FPLAuthManager()
+        if not auth.team_id or int(auth.team_id) != int(team_id):
+            return None
+        LAST_MY_TEAM = asyncio.run(
+            auth.make_authed_request(f"{BASE}/my-team/{team_id}/"))
+        return LAST_MY_TEAM
+    except Exception as e:
+        print(f"[my-team] authenticated fetch unavailable ({e}); "
+              "using last-deadline picks")
+        return None
+
+
 def fetch_squad_ids(team_id: int, gw: int) -> tuple[list[int], int]:
-    """Return (element ids of the current 15, bank in tenths) from latest picks."""
+    """Return (element ids of the current 15, bank in tenths). Prefers the
+    authenticated my-team view (includes pending transfers), else latest picks."""
+    mine = fetch_my_team(team_id)
+    if mine and mine.get("picks"):
+        ids = [p["element"] for p in mine["picks"]]
+        bank = (mine.get("transfers") or {}).get("bank", 0)
+        print(f"[my-team] live squad incl. pending transfers "
+              f"(bank £{bank/10:.1f}m)")
+        return ids, bank
     picks = _get(f"{BASE}/entry/{team_id}/event/{gw}/picks/")
     ids = [p["element"] for p in picks["picks"]]
     bank = (picks.get("entry_history", {}) or {}).get("bank", 0)
@@ -138,9 +237,10 @@ def fetch_live_team(team_id: int, gw: int, bootstrap: dict) -> LiveTeam:
     elements = {e["id"]: e for e in bootstrap["elements"]}
     team_short = {t["id"]: t["short_name"] for t in bootstrap["teams"]}
 
-    picks = _get(f"{BASE}/entry/{team_id}/event/{gw}/picks/")
-    live = _get(f"{BASE}/event/{gw}/live/")
-    entry = _get(f"{BASE}/entry/{team_id}/")
+    final = _gw_final(bootstrap, gw)
+    picks = _get_shared(f"{BASE}/entry/{team_id}/event/{gw}/picks/", final)
+    live = _get_shared(f"{BASE}/event/{gw}/live/", final)
+    entry = _get_shared(f"{BASE}/entry/{team_id}/")
 
     live_pts = {e["id"]: e["stats"]["total_points"] for e in live["elements"]}
     live_min = {e["id"]: e["stats"]["minutes"] for e in live["elements"]}

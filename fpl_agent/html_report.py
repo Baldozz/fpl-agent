@@ -524,6 +524,8 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700}
 .out{background:rgba(233,0,82,.14);color:var(--magenta)}
 .in{background:rgba(0,176,106,.16);color:var(--green)}
+.pill.ok{background:var(--green);color:#fff}
+.move.done .pill.out,.move.done .pill.in{opacity:.75}
 .gain{margin-left:auto;font-weight:800;color:var(--green);font-variant-numeric:tabular-nums}
 .flag-list span{display:inline-block;background:rgba(242,169,0,.16);color:#8a6a00;
   padding:3px 9px;border-radius:20px;font-size:12px;margin:2px 4px 2px 0}
@@ -679,6 +681,11 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None,
     last = d.last_gw
 
     # transfer plan
+    done = "".join(
+        f'<div class="move done"><span class="pill ok">✓ DONE</span>'
+        f'<span class="pill out">OUT {_esc(o.name)}</span>'
+        f'<span class="pill in">IN {_esc(i.name)}</span></div>'
+        for o, i in getattr(d, "done", []))
     if d.moves:
         rows = "".join(
             f'<div class="move"><span class="pill out">OUT {_esc(m.out.name)}</span>'
@@ -687,7 +694,10 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None,
             f'<div style="flex-basis:100%;font-size:12px;color:var(--muted)">'
             f'{_esc(m.reason)} · net £{m.cost_delta:+.1f}m</div></div>'
             for m in d.moves)
-        transfers = rows
+        transfers = done + rows
+    elif done:
+        transfers = done + ('<p class="hold">✓ Transfer made — no further moves '
+                            'this week (another would cost a -4 hit).</p>')
     else:
         transfers = '<p class="hold">✓ No transfer needed — hold your team.</p>'
 
@@ -1020,6 +1030,25 @@ SITE_CSS = """
 .brand .dot{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
   background:linear-gradient(135deg,var(--green),var(--pitch2));color:#fff;font-size:14px;
   box-shadow:0 3px 8px rgba(0,176,106,.4)}
+.refresh{font:inherit;font-size:12px;font-weight:700;cursor:pointer;
+  border:1px solid var(--line);background:var(--panel);color:inherit;
+  border-radius:10px;padding:7px 11px;display:flex;align-items:center;gap:4px}
+.refresh:hover{border-color:var(--green)}
+.refresh:disabled{opacity:.6;cursor:wait}
+.refresh.spin .ico{display:inline-block;animation:rspin 1s linear infinite}
+@keyframes rspin{to{transform:rotate(360deg)}}
+.stamp{font-size:11px;font-weight:600}
+.rov{position:fixed;inset:0;z-index:50;display:grid;place-items:center;
+  background:color-mix(in srgb,var(--bg) 60%,transparent);backdrop-filter:blur(3px)}
+.rbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 22px;
+  display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.rspin{width:20px;height:20px;border-radius:50%;border:3px solid var(--line);
+  border-top-color:var(--green);animation:rspin .8s linear infinite}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;
+  max-width:min(92vw,560px);background:var(--green);color:#fff;font-weight:700;font-size:13px;
+  padding:10px 16px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.2);transition:opacity .4s}
+.toast.err{background:var(--magenta)}
+.toast.gone{opacity:0;pointer-events:none}
 .tabs{display:flex;gap:3px;margin-left:auto;background:var(--panel);
   border:1px solid var(--line);border-radius:12px;padding:3px}
 .tab{padding:8px 16px;font:inherit;font-weight:700;cursor:pointer;border:none;
@@ -1042,6 +1071,35 @@ header.hero{box-shadow:0 12px 34px -14px rgba(0,0,0,.5)}
 """
 
 SITE_JS = """
+var rbtn=document.getElementById('refreshBtn');
+function toast(msg,err){
+  var t=document.createElement('div');t.className='toast'+(err?' err':'');t.textContent=msg;
+  document.body.appendChild(t);setTimeout(function(){t.classList.add('gone');},err?9000:5000);
+}
+(function(){try{var m=sessionStorage.getItem('fplRefreshed');
+  if(m){sessionStorage.removeItem('fplRefreshed');toast(m);}}catch(e){}})();
+if(rbtn)rbtn.onclick=function(){
+  if(location.protocol==='file:'){
+    alert('Refresh fetches new data via the local server. Run: python3 -m fpl_agent --serve  then open http://localhost:8765');
+    return;
+  }
+  var ov=document.createElement('div');ov.className='rov';
+  ov.innerHTML='<div class="rbox"><div class="rspin"></div><b>Fetching latest FPL data…</b>'
+    +'<span id="rsec" class="muted">0s</span></div>';
+  document.body.appendChild(ov);
+  var t0=Date.now(),tick=setInterval(function(){
+    var e=document.getElementById('rsec');if(e)e.textContent=Math.round((Date.now()-t0)/1000)+'s';},500);
+  rbtn.disabled=true;rbtn.classList.add('spin');
+  fetch('refresh',{method:'POST',cache:'no-store'}).then(function(r){return r.json();})
+    .then(function(j){
+      clearInterval(tick);ov.remove();rbtn.disabled=false;rbtn.classList.remove('spin');
+      if(!j.ok){toast('Refresh failed: '+(j.log||'').slice(-300),true);return;}
+      var sum=(j.log||'').split('\\n').filter(function(l){return l.indexOf('Unified site')===0;})[0]||'';
+      try{sessionStorage.setItem('fplRefreshed','✓ Refreshed '+new Date().toLocaleTimeString().slice(0,5)+(sum?' — '+sum.replace('Unified site: ',''):''));}catch(e){}
+      location.reload();
+    })
+    .catch(function(){clearInterval(tick);ov.remove();location.reload();});  // static host (Pages)
+};
 function showTab(id){
   document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('active',p.id===id);});
   document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t.dataset.pane===id);});
@@ -1061,8 +1119,12 @@ def render_site(d, live_by_gw: dict, league, headlines, available_gws: list[int]
                 current_gw: int, deadline: str, players: dict | None = None,
                 expert_intel=None, formation_rec=None, chip_rec=None,
                 chips_available=None, planned_players=None,
-                planned_meta: dict | None = None) -> str:
-    """One tabbed page: Dashboard | My Team (live + planned GW) | League."""
+                planned_meta: dict | None = None,
+                current_in_progress: bool = False) -> str:
+    """One tabbed page: Dashboard | My Team (live + planned GW) | League.
+
+    ``current_in_progress``: the current GW isn't finished yet, so My Team
+    opens on its live pane rather than the upcoming GW's plan."""
     dash = render_dashboard_html(d, headlines, full_document=False,
                                  expert_intel=expert_intel,
                                  formation_rec=formation_rec, chip_rec=chip_rec,
@@ -1073,6 +1135,8 @@ def render_site(d, live_by_gw: dict, league, headlines, available_gws: list[int]
     # An optional "planned" pane for the upcoming GW (projected pts + form +
     # opponent) becomes the default view when supplied.
     planned_gw = getattr(d, "upcoming_gw", None) if planned_players else None
+    plan_default = bool(planned_gw) and not (current_in_progress
+                                             and current_gw in live_by_gw)
     planned_pane = ""
     if planned_players and planned_gw:
         meta = planned_meta or {}
@@ -1081,22 +1145,25 @@ def render_site(d, live_by_gw: dict, league, headlines, available_gws: list[int]
             entry_name=d.entry_name or "My Team", manager=meta.get("manager", ""),
             formation=meta.get("formation", ""), xi_points=meta.get("xi_points"),
             stats=meta.get("stats"), note=meta.get("note", ""), embed=True)
-        planned_pane = (f'<div class="gwpane active" data-gw="{planned_gw}">'
+        planned_pane = (f'<div class="gwpane{" active" if plan_default else ""}" '
+                        f'data-gw="{planned_gw}">'
                         f'{planned_inner}</div>')
 
     opts = ""
     if planned_gw:
-        opts += f'<option value="{planned_gw}" selected>Gameweek {planned_gw}</option>'
+        opts += (f'<option value="{planned_gw}"{" selected" if plan_default else ""}>'
+                 f'Gameweek {planned_gw} (plan)</option>')
     opts += "".join(
-        f'<option value="{g}"{" selected" if (g==current_gw and not planned_gw) else ""}>'
-        f'Gameweek {g}</option>' for g in gws)
+        f'<option value="{g}"{" selected" if (g==current_gw and not plan_default) else ""}>'
+        f'Gameweek {g}{" (live)" if g == current_gw and current_in_progress else ""}'
+        f'</option>' for g in reversed(gws))
     panes = planned_pane
     for g in gws:
         team = live_by_gw.get(g)
         if not team:
             continue
         inner = render_live_html(team, g, deadline, [], embed=True)
-        active = " active" if (g == current_gw and not planned_gw) else ""
+        active = " active" if (g == current_gw and not plan_default) else ""
         panes += f'<div class="gwpane{active}" data-gw="{g}">{inner}</div>'
     team_tab = (f'<div class="gwbar"><label for="gwsel">View gameweek:</label>'
                 f'<select id="gwsel" class="gwsel">{opts}</select></div>{panes}')
@@ -1106,11 +1173,16 @@ def render_site(d, live_by_gw: dict, league, headlines, available_gws: list[int]
         '<div class="brand"><span class="dot">⚽</span>'
         f'<span>FPL Agent<span class="muted" style="font-weight:600"> · '
         f'{_esc(d.entry_name or "My Team")}</span></span></div>'
+        f'<span class="stamp muted" title="Data last refreshed">'
+        f'Updated {datetime.now().strftime("%a %d %b %H:%M")}</span>'
         '<div class="tabs">'
         '<button class="tab active" data-pane="tab-dash">📋<span class="lbl"> Dashboard</span></button>'
         '<button class="tab" data-pane="tab-team">⚽<span class="lbl"> My Team</span></button>'
         '<button class="tab" data-pane="tab-league">🏆<span class="lbl"> Varsical</span></button>'
-        '</div></div></div>')
+        '</div>'
+        '<button id="refreshBtn" class="refresh" title="Re-fetch FPL data and rebuild">'
+        '<span class="ico">↻</span><span class="lbl"> Refresh</span></button>'
+        '</div></div>')
     body = (
         f'{topbar}<div class="wrap">'
         f'<div id="tab-dash" class="pane active">{dash}</div>'

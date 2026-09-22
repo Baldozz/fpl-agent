@@ -132,11 +132,15 @@ def _run_site(args, boot, cur, nxt, gw, season_started) -> int:
     available = sorted({e["id"] for e in boot["events"]
                         if e.get("finished") or e.get("is_current")} | {current_gw})
     live_by_gw = {}
-    for g in available:
+
+    def _one_gw(g):
         try:
             live_by_gw[g] = live.fetch_live_team(team_id, g, boot)
         except Exception as e:
             print(f"[site] GW{g} live skipped: {e}")
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        list(pool.map(_one_gw, available))
 
     league_id = args.league_id or _resolve_league_id()
     d = agent.build_digest(team_id, boot, players, current_gw, gw, deadline,
@@ -161,7 +165,8 @@ def _run_site(args, boot, cur, nxt, gw, season_started) -> int:
                        deadline, players=players,
                        expert_intel=_expert_intel(args, gw),
                        formation_rec=formation_rec, chip_rec=chip_rec,
-                       planned_players=planned, planned_meta=planned_meta)
+                       planned_players=planned, planned_meta=planned_meta,
+                       current_in_progress=bool(cur and not cur.get("finished")))
     print(f"Unified site: GW{gw} plan (C {d.captain.name if d.captain else '—'}), "
           f"{len(available)} live GW(s), league '{lg.name}' ({len(lg.rows)})")
     if args.html or args.save:
@@ -305,9 +310,17 @@ def main(argv: list[str] | None = None) -> int:
                     help="Varsical league monitor page (writes docs/league.html)")
     ap.add_argument("--league-id", type=int, default=None,
                     help="classic league id (else env FPL_LEAGUE_ID)")
+    ap.add_argument("--serve", action="store_true",
+                    help="serve docs/ on localhost:8765 with a working Refresh "
+                         "button (rebuilds the site on demand)")
+    ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--free-transfers", type=int, default=1,
                     help="free transfers available (for the transfer plan)")
     args = ap.parse_args(argv)
+
+    if args.serve:
+        from .serve import serve
+        return serve(args.port)
 
     boot = api.bootstrap(use_cache=not args.no_cache)
     cur, nxt = api.current_and_next_event(boot)

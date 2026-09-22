@@ -115,7 +115,36 @@ def _parse_prob(v) -> float | None:
     return max(0.0, min(1.0, x))
 
 
+# Grok calls are slow (~15-20s) and cost xAI credits, so reuse a recent answer.
+# Independent of --no-cache (that flag is about FPL data freshness).
+CACHE_TTL = 30 * 60
+_CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+
+
 def analyse(team_names: list[str], gw: int) -> tuple[dict[str, dict], list[dict]]:
+    """Cached wrapper around ``_analyse`` (``CACHE_TTL``, keyed by gameweek)."""
+    import time
+    path = os.path.join(_CACHE_DIR, f"grok_gw{gw}.json")
+    try:
+        if time.time() - os.path.getmtime(path) < CACHE_TTL:
+            with open(path) as f:
+                sig, heads = json.load(f)
+            print(f"[grok] {len(sig)} start-prob signals, {len(heads)} headlines "
+                  f"(cached {int((time.time()-os.path.getmtime(path))/60)} min ago)")
+            return sig, heads
+    except (OSError, ValueError):
+        pass
+    sig, heads = _analyse(team_names, gw)
+    if sig or heads:  # never cache a failure
+        try:
+            with open(path, "w") as f:
+                json.dump([sig, heads], f)
+        except OSError:
+            pass
+    return sig, heads
+
+
+def _analyse(team_names: list[str], gw: int) -> tuple[dict[str, dict], list[dict]]:
     """One combined X-grounded query → (start_prob signals, headline bullets).
 
     signals: {name: {"start_prob", "reason", "source"}}  (name as Grok gives it)

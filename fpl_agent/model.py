@@ -7,6 +7,8 @@ gameweek(s). Designed to degrade gracefully at the season opener (when live
 """
 from __future__ import annotations
 
+import math
+
 import re
 from dataclasses import dataclass, field
 
@@ -42,6 +44,13 @@ class Player:
     starts: int
     chance: int | None   # chance_of_playing_next_round (0..100 or None)
     xgi90: float = 0.0   # expected goal involvements per 90 (last season)
+    xg90: float = 0.0    # expected goals per 90 (this season)
+    xa90: float = 0.0    # expected assists per 90
+    xgc90: float = 0.0   # team expected goals conceded per 90 while on pitch
+    dc90: float = 0.0    # defensive contributions (CBIT/CBIRT) per 90
+    saves90: float = 0.0
+    bonus: int = 0
+    pen_order: int | None = None  # 1 = first-choice penalty taker
     fdr: float = 3.0     # avg fixture difficulty over horizon (lower = easier)
     n_fix: int = 1       # number of fixtures in horizon (DGW awareness)
     team_strength: float = 3.0   # own-team quality 1..5 (CS / attack prior)
@@ -119,6 +128,13 @@ def build_players(bootstrap: dict) -> dict[int, Player]:
             minutes=int(e["minutes"]),
             starts=int(e.get("starts") or 0),
             xgi90=float(e.get("expected_goal_involvements_per_90") or 0),
+            xg90=float(e.get("expected_goals_per_90") or 0),
+            xa90=float(e.get("expected_assists_per_90") or 0),
+            xgc90=float(e.get("expected_goals_conceded_per_90") or 0),
+            dc90=float(e.get("defensive_contribution_per_90") or 0),
+            saves90=float(e.get("saves_per_90") or 0),
+            bonus=int(e.get("bonus") or 0),
+            pen_order=e.get("penalties_order"),
             chance=e.get("chance_of_playing_next_round"),
             team_strength=strength.get(e["team"], 3.0),
         )
@@ -237,6 +253,37 @@ def _mismatch_multiplier(team_strength: float, opp_strength: float) -> float:
     return 1.0 + gap * MISMATCH_WEIGHT
 
 
+# FPL scoring by position (1 GK, 2 DEF, 3 MID, 4 FWD).
+_GOAL_PTS = {1: 10, 2: 6, 3: 5, 4: 4}
+_CS_PTS = {1: 4, 2: 4, 3: 1, 4: 0}
+_DC_THRESHOLD = {2: 10, 3: 12, 4: 12}   # defensive contributions for +2
+# Weight of the xG-based estimate vs points-based form once the season is going.
+UNDERLYING_WEIGHT = 0.55
+_MIN_MINUTES_FOR_XG = 180
+
+
+def _underlying_points(p: Player) -> float:
+    """Expected points per full match from underlying stats (xG, xA, xGC,
+    defensive contributions, saves, bonus rate, penalty duty) — what the player's
+    output *should* be worth, stripping out finishing luck and fortunate hauls."""
+    pts = 2.0                                             # 60+ min appearance
+    pts += p.xg90 * _GOAL_PTS[p.pos] + p.xa90 * 3
+    if p.pen_order == 1 and p.pos != 1:
+        pts += 0.08 * _GOAL_PTS[p.pos]                    # ~pen/game not yet in xG
+    if p.pos in (1, 2, 3):
+        pts += math.exp(-p.xgc90) * _CS_PTS[p.pos]        # P(clean sheet) ~ Poisson
+    if p.pos in (1, 2):
+        pts -= p.xgc90 / 2                                # -1 per 2 conceded
+    if p.pos == 1:
+        pts += p.saves90 / 3                              # +1 per 3 saves
+    thr = _DC_THRESHOLD.get(p.pos)
+    if thr:
+        pts += 2 * max(0.0, min(1.0, (p.dc90 - 0.5 * thr) / thr))
+    games = max(p.starts, 1)
+    pts += 0.6 * p.bonus / games                          # regressed bonus rate
+    return pts
+
+
 def score_players(players: dict[int, Player], season_started: bool,
                   games_played: int = 0) -> None:
     """Compute ``projected`` points for each player for the horizon.
@@ -253,6 +300,11 @@ def score_players(players: dict[int, Player], season_started: bool,
             base = 0.45 * p.ep_next + 0.30 * p.form + 0.25 * p.ppg
         else:
             base = 0.80 * p.ep_next + 0.20 * p.ppg
+        # Regress towards underlying (xG-based) output once there's a sample, so
+        # a lucky haul (e.g. a defender's goal from 0.2 xG) isn't projected on.
+        if p.minutes >= _MIN_MINUTES_FOR_XG and games_played >= 2:
+            under = _underlying_points(p)
+            base = UNDERLYING_WEIGHT * under + (1 - UNDERLYING_WEIGHT) * base
 
         fdr_mult = _fdr_multiplier(p.fdr)
         team_mult = _team_multiplier(p.pos, p.team_strength)

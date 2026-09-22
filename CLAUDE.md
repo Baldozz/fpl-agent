@@ -6,8 +6,9 @@ This file orients Claude Code (or any AI agent) working in this repository.
 
 An **advisory** Fantasy Premier League agent. It ingests free FPL data + free
 football-news RSS, projects points, and outputs a rules-legal squad with
-captain/bench recommendations as a Markdown report per gameweek. It does **not**
-authenticate to a user's FPL account or submit teams — recommendations are
+captain/bench recommendations as a Markdown report per gameweek. It never
+submits teams or makes transfers. Its only authenticated call is a read-only
+`my-team` fetch (user-requested; reuses the fpl_mcp token) — recommendations are
 entered manually by the human. Keep it that way unless the user explicitly asks
 for account automation (which needs their credentials and carries account risk).
 
@@ -36,7 +37,8 @@ for account automation (which needs their credentials and carries account risk).
 | `agent.py` | Orchestration: `prepare_players` (shared scoring pipeline) + `build_digest` (tracker + captain + transfers) + `whatsapp_summary`. |
 | `transfers.py` | Transfer recommender vs the ACTUAL squad: `suggest_transfers` (budget/club-legal, flagged-first), `flagged_players`, `opportunities`. |
 | `league.py` | Private-league monitor: paginated standings + each rival's live team. |
-| `live.py` | Actual squad + live scores; also `fetch_history` (tracker) and `fetch_squad_ids`. |
+| `live.py` | Actual squad + live scores; also `fetch_history` (tracker) and `fetch_squad_ids`. `fetch_my_team` reads the AUTHENTICATED `my-team` view (pending transfers, bank, FT count) by reusing fpl_mcp's `~/.fpl-mcp` credentials; falls back to public last-deadline picks (CI). `agent._done_transfers` diffs it vs last picks → shown as ✓ DONE; no suggestions once FTs are used. |
+| `serve.py` | `--serve`: localhost:8765 server for `docs/`; `POST /refresh` rebuilds the site (the page's ↻ Refresh button). |
 | `notify.py` | WhatsApp: `--mode deadline` (2h window) and `--mode monitor` (injury watch, deduped via `state/alerts.json`). |
 
 ## Pages / CLI modes
@@ -103,7 +105,16 @@ API client is **authenticated own-team access** (`get_my_current_team`,
 `get_manager_transfer_history`, `suggest_captain`, etc.), enabling transfer/captain
 advice grounded in the user's real squad now that a team is entered. Auth is a
 one-time `fpl-mcp-config setup` (FPL refresh token → encrypted `~/.fpl-mcp/`,
-never committed); token is the user's to install, not ours to extract. The `.mcp.json`
+never committed); token is the user's to install, not ours to extract.
+
+**Auth fragility (bit us 2026-09-22):** fpl_mcp derives the encryption key from
+machine identifiers (`uuid.getnode()` / hostname / user), so `credentials.enc`
+becomes undecryptable when those change — it then silently falls back to the
+**plaintext `~/.fpl-mcp/config.json` refresh_token**, which is a long-consumed
+one. PingOne rotates refresh tokens on every use and revokes the family if a
+consumed token is replayed, so exchanging it kills the live session for the MCP
+too. `live._encrypted_store_readable()` therefore gates our auth on the
+encrypted store decrypting; never exchange the legacy plaintext token. The `.mcp.json`
 `command` is an absolute Python path for this machine — not portable to CI (the
 GitHub Action never needs it; it uses the direct API only).
 
@@ -121,6 +132,11 @@ xAI's live-search endpoint is unavailable — keep that graceful fallback.
 
 - Base = weighted blend of `ep_next`, `points_per_game`, and live `form`
   (form only weighted once `season_started`).
+- **Underlying regression:** once a player has ≥180 min, `_underlying_points(p)`
+  (xG/xA per 90 × FPL points, Poisson clean-sheet from xGC, defensive
+  contributions, saves, bonus rate, 1st-choice pens) is blended in at
+  `UNDERLYING_WEIGHT` (0.55). Stops luck-driven hauls (e.g. a DEF goal from 0.2 xG)
+  from topping the captaincy.
 - `_fdr_multiplier(fdr)` scales by fixture difficulty (1 easy … 5 hard).
 - `_mismatch_multiplier(team_strength, opp_strength)` favours the stronger side of
   a fixture (top vs bottom) using the strength gap; dial via `MISMATCH_WEIGHT`.

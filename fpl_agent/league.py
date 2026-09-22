@@ -89,11 +89,15 @@ def fetch_league(league_id: int, gw: int, bootstrap: dict,
     """Standings plus (optionally) each rival's live team for the gameweek."""
     name, rows = fetch_standings(league_id)
     if with_teams:
-        for row in rows[:max_teams]:
+        from concurrent.futures import ThreadPoolExecutor
+
+        def one(row):
             try:
                 row.team = fetch_live_team(row.entry_id, gw, bootstrap)
             except Exception:
                 row.team = None
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(pool.map(one, rows[:max_teams]))
     return League(league_id=league_id, name=name, gw=gw, rows=rows)
 
 

@@ -86,7 +86,10 @@ def suggest_transfers(current: list[Player], players: list[Player],
     budget = bank
     # Suggest up to your free transfers (capped at max_moves) — avoids proposing
     # points-hit moves you didn't ask for.
-    limit = min(max(free_transfers, 1), max_moves)
+    # No free transfers left (already used this GW) -> no suggestions.
+    if free_transfers <= 0:
+        return []
+    limit = min(free_transfers, max_moves)
     flagged_ids = {p.id for p in flagged_players(current)}
 
     for _ in range(limit):
