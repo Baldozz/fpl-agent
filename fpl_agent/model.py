@@ -279,16 +279,29 @@ def attacking_upside(p: Player) -> float:
     return per90 * min(p.start_prob, 1.0)
 
 
+# The armband and the vice go to a MIDFIELDER or FORWARD — the user's standing
+# rule. A defender's good week is a clean sheet plus bonus; doubling that wastes
+# the multiplier, and the vice only ever plays when the captain blanks, which is
+# exactly when you want someone who can still haul.
+CAPTAIN_POSITIONS = (3, 4)          # 3 = MID, 4 = FWD
+_INELIGIBLE = -1000.0               # ranks below every eligible player
+
+
 def captain_score(p: Player) -> float:
     """Ranking key for the armband: projection + weighted attacking ceiling.
 
-    Keepers are never captained. Without the ceiling term a defender with a
-    cushy fixture outranks a premium striker with a hard one (Gabriel 7.9 vs
-    Haaland 7.4 in GW6) — true on average, wrong for a 2x multiplier.
+    GKs and defenders are pushed below every midfielder/forward rather than
+    excluded outright, so a squad with no fit attacker still yields a captain
+    (and the two of them still rank sensibly against each other).
+
+    Even among eligible players the ceiling term matters: without it a cheap
+    defender with a cushy fixture outranked a premium striker with a hard one
+    (Gabriel 7.9 vs Haaland 7.4 in GW6) — true on average, wrong for a 2x.
     """
-    if p.pos == 1:
-        return -1.0
-    return p.projected + CAPTAIN_CEILING_WEIGHT * attacking_upside(p)
+    score = p.projected + CAPTAIN_CEILING_WEIGHT * attacking_upside(p)
+    if p.pos not in CAPTAIN_POSITIONS:
+        return _INELIGIBLE + score
+    return score
 
 
 def _underlying_points(p: Player) -> float:

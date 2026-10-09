@@ -140,7 +140,9 @@ xAI's live-search endpoint is unavailable — keep that graceful fallback.
   from topping the captaincy.
 - **Captaincy is a separate ranking:** `model.captain_score` = projection +
   `CAPTAIN_CEILING_WEIGHT` × `attacking_upside` (xG/xA-derived points only, pens
-  included; GKs return -1 so they're never captained). Used by
+  included). **User's standing rule: captain AND vice are MID or FWD only**
+  (`CAPTAIN_POSITIONS`); GK/DEF get a -1000 offset so they rank below every
+  eligible player but still order sensibly if no attacker is fit. Used by
   `agent.build_digest` AND `optimizer.build_squad`. Projection alone captains a
   cheap defender with a cushy fixture over a premium striker with a hard one —
   correct on average, wrong for a 2× multiplier that wants the right tail.
