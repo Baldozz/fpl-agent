@@ -1,0 +1,60 @@
+{
+ "team_id": 8799067,
+ "current_gw": 5,
+ "fetched_at": "2026-10-09T14:26:50+00:00",
+ "picks": [
+  {
+   "element": 1
+  },
+  {
+   "element": 4
+  },
+  {
+   "element": 391
+  },
+  {
+   "element": 200
+  },
+  {
+   "element": 154
+  },
+  {
+   "element": 367
+  },
+  {
+   "element": 542
+  },
+  {
+   "element": 15
+  },
+  {
+   "element": 411
+  },
+  {
+   "element": 491
+  },
+  {
+   "element": 346
+  },
+  {
+   "element": 109
+  },
+  {
+   "element": 212
+  },
+  {
+   "element": 259
+  },
+  {
+   "element": 173
+  }
+ ],
+ "transfers": {
+  "cost": 4,
+  "status": "cost",
+  "limit": 1,
+  "made": 1,
+  "bank": 0,
+  "value": 994
+ }
+}

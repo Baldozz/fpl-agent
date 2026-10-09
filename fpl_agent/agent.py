@@ -68,6 +68,7 @@ class Digest:
     flagged: list[Player] = field(default_factory=list)
     opportunities: list[Player] = field(default_factory=list)
     bank: int = 0                                          # tenths of £m
+    squad_source: str = ""     # "live" | "snapshot <iso>" | "picks"
 
     @property
     def last_gw(self) -> live.GWHistory | None:
@@ -144,6 +145,7 @@ def build_digest(team_id: int, bootstrap: dict, players: dict[int, Player],
         current=current, captain=captain, vice=vice,
         moves=moves, flagged=flagged, opportunities=opps, bank=bank,
         done=done, free_transfers=free_transfers,
+        squad_source=live.SQUAD_SOURCE,
     )
 
 

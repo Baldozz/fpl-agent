@@ -530,6 +530,8 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
 .flag-list span{display:inline-block;background:rgba(242,169,0,.16);color:#8a6a00;
   padding:3px 9px;border-radius:20px;font-size:12px;margin:2px 4px 2px 0}
 .hold{color:var(--green);font-weight:700}
+.srcnote{font-size:12px;color:var(--muted);background:rgba(242,169,0,.10);
+  border-left:3px solid rgba(242,169,0,.6);padding:7px 10px;border-radius:0 8px 8px 0;margin:0 0 10px}
 .me{background:rgba(0,176,106,.10)}
 .mv-up{color:var(--green)} .mv-dn{color:var(--magenta)} .mv-eq{color:var(--muted)}
 .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 4px}
@@ -695,6 +697,17 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None,
         f'<span class="pill out">OUT {_esc(o.name)}</span>'
         f'<span class="pill in">IN {_esc(i.name)}</span></div>'
         for o, i in getattr(d, "done", []))
+    src = getattr(d, "squad_source", "") or ""
+    if src.startswith("snapshot"):
+        when = src.split(" ", 1)[1][:16].replace("T", " ")
+        note = ('<p class="srcnote">📦 Squad as of <b>' + _esc(when) + ' UTC</b> '
+                '(saved by the last local run — this build had no FPL login, so '
+                'transfers made since then are not shown).</p>')
+    elif src == "picks":
+        note = ('<p class="srcnote">⚠️ Squad as entered at the <b>last deadline</b> '
+                '— transfers made since then are not visible to this build.</p>')
+    else:
+        note = ""
     if d.moves:
         rows = "".join(
             f'<div class="move"><span class="pill out">OUT {_esc(m.out.name)}</span>'
@@ -703,12 +716,12 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None,
             f'<div style="flex-basis:100%;font-size:12px;color:var(--muted)">'
             f'{_esc(m.reason)} · net £{m.cost_delta:+.1f}m</div></div>'
             for m in d.moves)
-        transfers = done + rows
+        transfers = note + done + rows
     elif done:
-        transfers = done + ('<p class="hold">✓ Transfer made — no further moves '
+        transfers = note + done + ('<p class="hold">✓ Transfer made — no further moves '
                             'this week (another would cost a -4 hit).</p>')
     else:
-        transfers = '<p class="hold">✓ No transfer needed — hold your team.</p>'
+        transfers = note + '<p class="hold">✓ No transfer needed — hold your team.</p>'
 
     flagged = ("".join(f"<span>{_esc(p.name)} — {_esc(p.news or 'rotation risk')}</span>"
                        for p in d.flagged) or

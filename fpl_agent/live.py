@@ -13,6 +13,7 @@ import os
 import re
 import threading
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -165,6 +166,43 @@ def fetch_history(team_id: int, bootstrap: dict) -> list[GWHistory]:
 
 
 LAST_MY_TEAM: dict | None = None   # last authenticated my-team payload
+SQUAD_SOURCE = ""                  # "live" | "snapshot <iso>" | "picks"
+_SNAPSHOT = Path(__file__).resolve().parent.parent / "state" / "my_team.json"
+
+
+def _save_snapshot(team_id: int, current_gw: int, mine: dict) -> None:
+    """Persist the authenticated squad so builds WITHOUT credentials (the
+    GitHub Action) can still show the real team instead of last-deadline picks.
+
+    Only ids + transfer counters — no tokens, and nothing the public league page
+    doesn't already expose. Tagged with ``current_gw`` because a snapshot is only
+    valid inside the transfer window it was taken in: once the next deadline
+    passes, the public picks ARE the truth and the snapshot is discarded.
+    """
+    try:
+        _SNAPSHOT.parent.mkdir(parents=True, exist_ok=True)
+        _SNAPSHOT.write_text(json.dumps({
+            "team_id": int(team_id),
+            "current_gw": int(current_gw),
+            "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "picks": [{"element": p["element"]} for p in mine.get("picks", [])],
+            "transfers": mine.get("transfers", {}),
+        }, indent=1))
+    except OSError as e:
+        print(f"[my-team] snapshot not written: {e}")
+
+
+def _load_snapshot(team_id: int, current_gw: int) -> dict | None:
+    """The saved squad, if it belongs to this team AND this transfer window."""
+    try:
+        snap = json.loads(_SNAPSHOT.read_text())
+    except (OSError, ValueError):
+        return None
+    if int(snap.get("team_id", 0)) != int(team_id):
+        return None
+    if int(snap.get("current_gw", -1)) != int(current_gw):
+        return None          # stale window: a deadline has passed since
+    return snap
 
 
 def _encrypted_store_readable() -> bool:
@@ -218,15 +256,33 @@ def fetch_my_team(team_id: int) -> dict | None:
 
 
 def fetch_squad_ids(team_id: int, gw: int) -> tuple[list[int], int]:
-    """Return (element ids of the current 15, bank in tenths). Prefers the
-    authenticated my-team view (includes pending transfers), else latest picks."""
+    """Return (element ids of the current 15, bank in tenths).
+
+    Precedence: authenticated my-team (pending transfers included) > snapshot
+    from a previous authenticated run in THIS transfer window > public
+    last-deadline picks. The middle rung is what keeps the published page
+    correct when the build has no credentials (CI).
+    """
+    global LAST_MY_TEAM, SQUAD_SOURCE
     mine = fetch_my_team(team_id)
     if mine and mine.get("picks"):
         ids = [p["element"] for p in mine["picks"]]
         bank = (mine.get("transfers") or {}).get("bank", 0)
+        _save_snapshot(team_id, gw, mine)
+        SQUAD_SOURCE = "live"
         print(f"[my-team] live squad incl. pending transfers "
               f"(bank £{bank/10:.1f}m)")
         return ids, bank
+    snap = _load_snapshot(team_id, gw)
+    if snap and snap.get("picks"):
+        LAST_MY_TEAM = {"picks": snap["picks"],
+                        "transfers": snap.get("transfers", {})}
+        SQUAD_SOURCE = f"snapshot {snap['fetched_at']}"
+        bank = (snap.get("transfers") or {}).get("bank", 0)
+        print(f"[my-team] using snapshot from {snap['fetched_at']} "
+              f"(bank £{bank/10:.1f}m) — no credentials in this build")
+        return [p["element"] for p in snap["picks"]], bank
+    SQUAD_SOURCE = "picks"
     picks = _get(f"{BASE}/entry/{team_id}/event/{gw}/picks/")
     ids = [p["element"] for p in picks["picks"]]
     bank = (picks.get("entry_history", {}) or {}).get("bank", 0)
