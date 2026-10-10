@@ -1,7 +1,7 @@
 {
  "team_id": 8799067,
- "current_gw": 5,
- "fetched_at": "2026-10-10T09:55:31+00:00",
+ "current_gw": 6,
+ "fetched_at": "2026-10-10T10:56:32+00:00",
  "picks": [
   {
    "element": 1
@@ -53,7 +53,7 @@
   "cost": 4,
   "status": "cost",
   "limit": 1,
-  "made": 1,
+  "made": 0,
   "bank": 0,
   "value": 994
  }
