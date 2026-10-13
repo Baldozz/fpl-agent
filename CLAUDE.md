@@ -152,7 +152,10 @@ xAI's live-search endpoint is unavailable — keep that graceful fallback.
   The armband only passes to the vice on 0 minutes, so a small doubt (Grok
   "possible rest" 0.9) no longer flips the armband; fit-but-rotated players
   split non-starts `CAMEO_SHARE` cameo / rest absent, injury-flagged ones are
-  absent. Players with play=0 are excluded. Projection alone captains a
+  absent. Players with play=0 are excluded. **User's injury rule:** an
+  injury-flagged player with chance ≤ `INJURY_ARMBAND_MAX_CHANCE` (50%) is never
+  captain — the armband passes to the next best (he may still be vice); a
+  75% knock or a rest doubt uses the expected-value logic. Projection alone captains a
   cheap defender with a cushy fixture over a premium striker with a hard one —
   correct on average, wrong for a 2× multiplier that wants the right tail.
 - `_fdr_multiplier(fdr)` scales by fixture difficulty (1 easy … 5 hard).

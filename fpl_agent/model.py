@@ -331,14 +331,30 @@ def _captain_if_plays(p: Player) -> float:
 # player's non-starts assumed to be cameos, and what a cameo scores.
 CAMEO_SHARE = 0.5
 CAMEO_POINTS = 1.5
+# Injury rule (user's): rest/rotation doubts use the expected-value logic
+# below, but an injury-flagged player whose chance of playing is at or under
+# this % never takes the armband — it passes to the next-best player rather
+# than gambling on the vice. FPL publishes 75 / 50 / 25 / 0.
+INJURY_ARMBAND_MAX_CHANCE = 50
+
+
+def _injury_flagged(p: Player) -> bool:
+    return p.status != "a" or (p.chance is not None and p.chance < 100)
+
+
+def _serious_injury(p: Player) -> bool:
+    """Injury/suspension flag with a low chance of playing (not a rest doubt)."""
+    if not _injury_flagged(p):
+        return False
+    chance = p.chance if p.chance is not None else round(p.play * 100)
+    return chance <= INJURY_ARMBAND_MAX_CHANCE
 
 
 def _no_play(p: Player) -> float:
     """P(0 minutes) — when the armband passes to the vice. Injured / flagged
     players are simply absent; a fit-but-rotated one may still get a cameo."""
     miss = 1.0 - p.play
-    flagged = p.status != "a" or (p.chance is not None and p.chance < 100)
-    return miss if flagged else miss * (1 - CAMEO_SHARE)
+    return miss if _injury_flagged(p) else miss * (1 - CAMEO_SHARE)
 
 
 def pick_captain(pool: list[Player]) -> tuple[Player | None, Player | None]:
@@ -351,6 +367,8 @@ def pick_captain(pool: list[Player]) -> tuple[Player | None, Player | None]:
     players this is exactly the ``captain_score`` ranking; it stops a small
     rotation doubt (e.g. Grok's "possible rest" 0.9) flipping the armband to a
     weaker player the vice already covers, while a real doubt still moves it.
+    A seriously injured player (``INJURY_ARMBAND_MAX_CHANCE``) is never
+    captain — the armband goes to the next best; he can still be vice.
     MID/FWD only (``CAPTAIN_POSITIONS``); others only if fewer than two
     attackers are available.
     """
@@ -368,7 +386,8 @@ def pick_captain(pool: list[Player]) -> tuple[Player | None, Player | None]:
         return elig[0], None
     full = {p.id: _captain_if_plays(p) for p in elig}
     best, best_key = (elig[0], elig[1]), (float("-inf"), float("-inf"))
-    for c in elig:
+    captains = [p for p in elig if not _serious_injury(p)] or elig
+    for c in captains:
         for v in elig:
             if v is c:
                 continue
