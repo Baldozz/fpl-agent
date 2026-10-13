@@ -116,17 +116,37 @@ def _parse_prob(v) -> float | None:
 
 
 # Grok calls are slow (~15-20s) and cost xAI credits, so reuse a recent answer.
-# Independent of --no-cache (that flag is about FPL data freshness).
-CACHE_TTL = 30 * 60
+# Independent of --no-cache (that flag is about FPL data freshness). Team news
+# mostly breaks in the last day (press conferences, late knocks), so refresh
+# hourly then and only every few hours before — the site rebuilds every 30 min,
+# and a 30-min TTL meant a paid X search on nearly every build.
+CACHE_TTL = 60 * 60                  # within NEAR_DEADLINE of the deadline
+CACHE_TTL_FAR = 6 * 60 * 60          # further out
+NEAR_DEADLINE = 24 * 60 * 60
 _CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
 
-def analyse(team_names: list[str], gw: int) -> tuple[dict[str, dict], list[dict]]:
-    """Cached wrapper around ``_analyse`` (``CACHE_TTL``, keyed by gameweek)."""
+def cache_ttl(deadline: str | None) -> int:
+    """Seconds a cached answer stays fresh, given the next deadline (ISO)."""
+    if not deadline:
+        return CACHE_TTL
+    from datetime import datetime, timezone
+    try:
+        dl = datetime.fromisoformat(deadline.replace("Z", "+00:00"))
+    except ValueError:
+        return CACHE_TTL
+    left = (dl - datetime.now(timezone.utc)).total_seconds()
+    return CACHE_TTL if left <= NEAR_DEADLINE else CACHE_TTL_FAR
+
+
+def analyse(team_names: list[str], gw: int,
+            deadline: str | None = None) -> tuple[dict[str, dict], list[dict]]:
+    """Cached wrapper around ``_analyse`` (keyed by gameweek; fresh for
+    ``cache_ttl(deadline)``: 6 h far from the deadline, 1 h in the last day)."""
     import time
     path = os.path.join(_CACHE_DIR, f"grok_gw{gw}.json")
     try:
-        if time.time() - os.path.getmtime(path) < CACHE_TTL:
+        if time.time() - os.path.getmtime(path) < cache_ttl(deadline):
             with open(path) as f:
                 sig, heads = json.load(f)
             print(f"[grok] {len(sig)} start-prob signals, {len(heads)} headlines "

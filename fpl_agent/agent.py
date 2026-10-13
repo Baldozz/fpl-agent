@@ -43,7 +43,10 @@ def prepare_players(boot: dict, gw: int, season_started: bool, horizon: int = 3,
     grok_used = False
     grok_bullets: list[dict] = []
     if use_grok and grok_mod.available():
-        gsig, grok_bullets = grok_mod.analyse([t["name"] for t in boot["teams"]], gw)
+        deadline = next((e["deadline_time"] for e in boot["events"]
+                         if e["id"] == gw), None)
+        gsig, grok_bullets = grok_mod.analyse([t["name"] for t in boot["teams"]],
+                                              gw, deadline)
         if gsig:
             signals = merge(signals, gsig)
             grok_used = True

@@ -31,7 +31,7 @@ for account automation (which needs their credentials and carries account risk).
 | `model.py` | `Player` dataclass + `score_players()` — expected points from form/fixtures/team-strength/start-probability. |
 | `optimizer.py` | ILP (PuLP/CBC): maximise XI points, minimise bench cost; greedy fallback; XI/captain/bench. |
 | `news.py` | Free Premier League RSS feeds → headlines relevant to the squad / injuries. |
-| `grok.py` | xAI **Responses API** (`/v1/responses`) with server-side `x_search` → live-X start-probability signals + headlines. Optional; needs `XAI_API_KEY` + credits. NB: the old chat-completions `search_parameters` live-search is deprecated (410); `_extract_message` reads the `output[]` item whose `type=="message"`. |
+| `grok.py` | xAI **Responses API** (`/v1/responses`) with server-side `x_search` → live-X start-probability signals + headlines. Optional; needs `XAI_API_KEY` + credits. Answers are cached per GW for `cache_ttl(deadline)`: 6 h when the deadline is >24 h away, 1 h in the last day (a 30-min TTL with 30-min rebuilds burned credits on ~every build). NB: the old chat-completions `search_parameters` live-search is deprecated (410); `_extract_message` reads the `output[]` item whose `type=="message"`. |
 | `overrides.py` + `overrides.json` | Human/Grok start-probability overrides the FPL API lacks. |
 | `report.py` / `html_report.py` | Markdown report / standalone HTML page. `html_report.render_html` = pre-deadline recommendation; `render_live_html` = live actual-team scoreboard. |
 | `live.py` | Fetch the manager's ACTUAL entered team (`entry/{id}/event/{gw}/picks/`) + LIVE points (`event/{gw}/live/`). Public endpoints, no auth. Team id via `--team-id`, `FPL_TEAM_ID`, or `~/.fpl-mcp/config.json`. |
