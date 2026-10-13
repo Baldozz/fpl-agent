@@ -1,60 +1,97 @@
 {
  "team_id": 8799067,
  "current_gw": 6,
- "fetched_at": "2026-10-11T08:22:14+00:00",
+ "fetched_at": "2026-10-13T10:34:45+00:00",
  "picks": [
   {
-   "element": 1
+   "element": 109,
+   "selling_price": 45
   },
   {
-   "element": 4
+   "element": 4,
+   "selling_price": 79
   },
   {
-   "element": 391
+   "element": 391,
+   "selling_price": 56
   },
   {
-   "element": 200
+   "element": 200,
+   "selling_price": 59
   },
   {
-   "element": 259
+   "element": 173,
+   "selling_price": 40
   },
   {
-   "element": 173
+   "element": 154,
+   "selling_price": 96
   },
   {
-   "element": 154
+   "element": 542,
+   "selling_price": 57
   },
   {
-   "element": 542
+   "element": 15,
+   "selling_price": 68
   },
   {
-   "element": 15
+   "element": 124,
+   "selling_price": 60
   },
   {
-   "element": 411
+   "element": 411,
+   "selling_price": 155
   },
   {
-   "element": 346
+   "element": 346,
+   "selling_price": 60
   },
   {
-   "element": 109
+   "element": 1,
+   "selling_price": 60
   },
   {
-   "element": 367
+   "element": 259,
+   "selling_price": 40
   },
   {
-   "element": 212
+   "element": 212,
+   "selling_price": 44
   },
   {
-   "element": 491
+   "element": 491,
+   "selling_price": 58
   }
  ],
  "transfers": {
   "cost": 4,
   "status": "cost",
   "limit": 1,
-  "made": 0,
-  "bank": 0,
-  "value": 994
- }
+  "made": 1,
+  "bank": 11,
+  "value": 982
+ },
+ "chips": [
+  {
+   "name": "bboost",
+   "status_for_entry": "available",
+   "played_by_entry": []
+  },
+  {
+   "name": "3xc",
+   "status_for_entry": "available",
+   "played_by_entry": []
+  },
+  {
+   "name": "wildcard",
+   "status_for_entry": "available",
+   "played_by_entry": []
+  },
+  {
+   "name": "freehit",
+   "status_for_entry": "available",
+   "played_by_entry": []
+  }
+ ]
 }
