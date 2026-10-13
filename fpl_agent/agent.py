@@ -162,12 +162,9 @@ def build_digest(team_id: int, bootstrap: dict, players: dict[int, Player],
         if t.get("made") else []
     current = [players[i] for i in squad_ids if i in players]
 
-    # Captain from outfield players only (never a goalkeeper), ranked by
-    # projection + attacking ceiling — the armband wants hauls, not averages.
-    outfield = sorted((p for p in current if p.pos != 1),
-                      key=model_mod.captain_score, reverse=True)
-    captain = outfield[0] if outfield else None
-    vice = outfield[1] if len(outfield) > 1 else None
+    # Armband: MID/FWD by projection + attacking ceiling, with the vice
+    # counted as cover when the captain might not play (model.pick_captain).
+    captain, vice = model_mod.pick_captain(current)
 
     # Look-ahead: re-price every player's next N fixtures one by one (and keep
     # per-GW points further out for chip timing).

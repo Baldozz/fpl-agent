@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .model import Player, captain_score, keepers_ok
+from .model import Player, keepers_ok, pick_captain
 
 MAX_PER_CLUB = 3
 HIT_COST = 4                 # points per transfer beyond the free ones
@@ -330,7 +330,7 @@ def wildcard_draft(current: list[Player], players: list[Player], bank: int,
     cur_ids, new_ids = {p.id for p in current}, {p.id for p in squad}
     order = {1: 0, 2: 1, 3: 2, 4: 3}
     xi_sorted = sorted(xi, key=lambda p: (order[p.pos], -p.horizon_proj))
-    captain = max(xi, key=captain_score)
+    captain = pick_captain(xi)[0]
     return WildcardDraft(
         squad=squad, xi=xi_sorted, bench=_order_bench(squad, xi), captain=captain,
         budget=budget, cost=sum(p.cost for p in squad),

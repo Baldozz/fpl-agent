@@ -145,8 +145,14 @@ xAI's live-search endpoint is unavailable — keep that graceful fallback.
   `CAPTAIN_CEILING_WEIGHT` × `attacking_upside` (xG/xA-derived points only, pens
   included). **User's standing rule: captain AND vice are MID or FWD only**
   (`CAPTAIN_POSITIONS`); GK/DEF get a -1000 offset so they rank below every
-  eligible player but still order sensibly if no attacker is fit. Used by
-  `agent.build_digest` AND `optimizer.build_squad`. Projection alone captains a
+  eligible player but still order sensibly if no attacker is fit.
+  **Captain + vice are chosen together** by `model.pick_captain` (used by
+  `agent.build_digest`, `optimizer.build_squad`, `wildcard_draft`): value =
+  P(start C)·score(C) + P(cameo C)·`CAMEO_POINTS` + P(0 min C)·P(V)·score(V).
+  The armband only passes to the vice on 0 minutes, so a small doubt (Grok
+  "possible rest" 0.9) no longer flips the armband; fit-but-rotated players
+  split non-starts `CAMEO_SHARE` cameo / rest absent, injury-flagged ones are
+  absent. Players with play=0 are excluded. Projection alone captains a
   cheap defender with a cushy fixture over a premium striker with a hard one —
   correct on average, wrong for a 2× multiplier that wants the right tail.
 - `_fdr_multiplier(fdr)` scales by fixture difficulty (1 easy … 5 hard).

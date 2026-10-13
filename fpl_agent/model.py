@@ -316,6 +316,75 @@ def captain_score(p: Player) -> float:
     return score
 
 
+def _captain_if_plays(p: Player) -> float:
+    """``captain_score`` assuming he starts: projection and upside with the
+    start/availability discount taken back out."""
+    play = p.play if p.play > 0 else 0.0
+    if play == 0:
+        return 0.0
+    upside = attacking_upside(p) / p.start_prob if p.start_prob > 0 else 0.0
+    return p.projected / play + CAPTAIN_CEILING_WEIGHT * upside
+
+
+# A fit player who doesn't start often still comes off the bench: the armband
+# then doubles a cameo score and the vice never activates. Share of a fit
+# player's non-starts assumed to be cameos, and what a cameo scores.
+CAMEO_SHARE = 0.5
+CAMEO_POINTS = 1.5
+
+
+def _no_play(p: Player) -> float:
+    """P(0 minutes) — when the armband passes to the vice. Injured / flagged
+    players are simply absent; a fit-but-rotated one may still get a cameo."""
+    miss = 1.0 - p.play
+    flagged = p.status != "a" or (p.chance is not None and p.chance < 100)
+    return miss if flagged else miss * (1 - CAMEO_SHARE)
+
+
+def pick_captain(pool: list[Player]) -> tuple[Player | None, Player | None]:
+    """Captain + vice that maximise the expected armband score.
+
+    The armband passes to the vice only when the captain plays 0 minutes, so a
+    doubt over a captain costs far less than his whole score. Value of (C, V) =
+        P(start C)·score(C) + P(cameo C)·CAMEO_POINTS + P(0 min C)·P(V)·score(V)
+    with score = projection + attacking ceiling if he starts. For nailed
+    players this is exactly the ``captain_score`` ranking; it stops a small
+    rotation doubt (e.g. Grok's "possible rest" 0.9) flipping the armband to a
+    weaker player the vice already covers, while a real doubt still moves it.
+    MID/FWD only (``CAPTAIN_POSITIONS``); others only if fewer than two
+    attackers are available.
+    """
+    # Someone certain not to play "scores" exactly his vice's points — a tie
+    # with captaining the vice directly, never better. Leave him out.
+    playing = [p for p in pool if p.play > 0] or list(pool)
+    elig = [p for p in playing if p.pos in CAPTAIN_POSITIONS]
+    if len(elig) < 2:
+        rest = sorted((p for p in playing if p not in elig), key=captain_score,
+                      reverse=True)
+        elig += rest[:2 - len(elig)]
+    if not elig:
+        return None, None
+    if len(elig) == 1:
+        return elig[0], None
+    full = {p.id: _captain_if_plays(p) for p in elig}
+    best, best_key = (elig[0], elig[1]), (float("-inf"), float("-inf"))
+    for c in elig:
+        for v in elig:
+            if v is c:
+                continue
+            absent = _no_play(c)
+            cameo = 1.0 - c.play - absent
+            val = (c.play * full[c.id] + cameo * CAMEO_POINTS
+                   + absent * v.play * full[v.id])
+            # Ties: prefer the captain's own expected score, then the vice's —
+            # with a nailed captain every vice values the same, but the best
+            # one should still cover.
+            key = (round(val, 6), c.play * full[c.id], v.play * full[v.id])
+            if key > best_key:
+                best, best_key = (c, v), key
+    return best
+
+
 def _underlying_points(p: Player) -> float:
     """Expected points per full match from underlying stats (xG, xA, xGC,
     defensive contributions, saves, bonus rate, penalty duty) — what the player's
