@@ -143,14 +143,16 @@ def _run_site(args, boot, cur, nxt, gw, season_started) -> int:
         list(pool.map(_one_gw, available))
 
     league_id = args.league_id or _resolve_league_id()
-    d = agent.build_digest(team_id, boot, players, current_gw, gw, deadline,
-                           league_id, args.free_transfers)
     lg = None
     if league_id:
         try:
             lg = league.fetch_league(league_id, current_gw, boot, with_teams=True)
         except Exception as e:
             print(f"[site] league skipped: {e}")
+    # One league fetch feeds both the League tab and the digest's ownership.
+    d = agent.build_digest(team_id, boot, players, current_gw, gw, deadline,
+                           league_id, args.free_transfers, league=lg,
+                           lookahead=args.lookahead)
     if lg is None:
         lg = league.League(league_id=league_id or 0, name="League", gw=current_gw)
     else:
@@ -167,6 +169,10 @@ def _run_site(args, boot, cur, nxt, gw, season_started) -> int:
                        formation_rec=formation_rec, chip_rec=chip_rec,
                        planned_players=planned, planned_meta=planned_meta,
                        current_in_progress=bool(cur and not cur.get("finished")))
+    print(f"Transfers over {d.lookahead_label}: {len(d.options)} option(s); "
+          f"wildcard draft "
+          + (f"{d.wildcard.gain:+.1f} xPts, {len(d.wildcard.ins)} change(s)"
+             if d.wildcard else "unavailable"))
     print(f"Unified site: GW{gw} plan (C {d.captain.name if d.captain else '—'}), "
           f"{len(available)} live GW(s), league '{lg.name}' ({len(lg.rows)})")
     if args.html or args.save:
@@ -186,14 +192,16 @@ def _run_dashboard(args, boot, cur, nxt, gw, season_started) -> int:
     league_id = args.league_id or _resolve_league_id()
     current_gw = (cur or nxt)["id"]
     d = agent.build_digest(team_id, boot, players, current_gw, gw,
-                           nxt["deadline_time"], league_id, args.free_transfers)
+                           nxt["deadline_time"], league_id, args.free_transfers,
+                           lookahead=args.lookahead)
     headlines = []
     if all_headlines:
         headlines = news.relevant_headlines(
             all_headlines, {p.name for p in d.current},
             {t["name"] for t in boot["teams"]})
     print(f"GW{gw} plan — (C) {d.captain.name if d.captain else '—'}; "
-          f"{len(d.moves)} transfer(s), {len(d.flagged)} flagged")
+          f"{len(d.moves)} transfer(s), {len(d.options)} option(s) over "
+          f"{d.lookahead_label}, {len(d.flagged)} flagged")
     if args.html or args.save:
         DOCS.mkdir(exist_ok=True)
         fixtures = api.fixtures(use_cache=not args.no_cache)
@@ -314,6 +322,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="serve docs/ on localhost:8765 with a working Refresh "
                          "button (rebuilds the site on demand)")
     ap.add_argument("--port", type=int, default=8765)
+    ap.add_argument("--lookahead", type=int, default=model.LOOKAHEAD,
+                    help="gameweeks the transfer options and wildcard draft "
+                         f"look ahead (default {model.LOOKAHEAD})")
     ap.add_argument("--free-transfers", type=int, default=1,
                     help="free transfers available (for the transfer plan)")
     args = ap.parse_args(argv)

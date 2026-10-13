@@ -20,14 +20,33 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DOCS = ROOT / "docs"
 _lock = threading.Lock()
+_state = threading.Condition()
+_running = False
+_last: tuple[bool, str] = (False, "")
 
 
 def rebuild() -> tuple[bool, str]:
-    with _lock:  # one rebuild at a time
-        r = subprocess.run(
-            [sys.executable, "-m", "fpl_agent", "--site", "--html", "--no-cache"],
-            cwd=ROOT, capture_output=True, text=True, timeout=600)
-    return r.returncode == 0, (r.stdout + r.stderr)[-4000:]
+    """Rebuild the site. Concurrent callers (Refresh button, refresh-on-open,
+    the scheduled job) share an in-flight build instead of queueing a fresh one
+    each — a queue of N requests used to cost N full builds."""
+    global _running, _last
+    with _state:
+        if _running:
+            _state.wait_for(lambda: not _running)
+            return _last
+        _running = True
+    try:
+        with _lock:
+            r = subprocess.run(
+                [sys.executable, "-m", "fpl_agent", "--site", "--html", "--no-cache"],
+                cwd=ROOT, capture_output=True, text=True, timeout=600)
+        result = (r.returncode == 0, (r.stdout + r.stderr)[-4000:])
+    except Exception as e:
+        result = (False, f"rebuild failed: {e}")
+    with _state:
+        _running, _last = False, result
+        _state.notify_all()
+    return result
 
 
 class Handler(SimpleHTTPRequestHandler):

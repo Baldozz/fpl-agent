@@ -59,6 +59,18 @@ class Player:
     override_reason: str = ""    # why start_prob was set by human/Grok
     projected: float = 0.0
     reasons: list[str] = field(default_factory=list)
+    # Per-match points BEFORE fixture difficulty / availability (set by
+    # score_players) — lets attach_lookahead re-price each upcoming fixture.
+    base_pm: float = 0.0
+    play: float = 1.0            # min(availability, start_prob) for next GW
+    # Multi-GW look-ahead (attach_lookahead): Σ projected points over the next
+    # N gameweeks, and the fixture run as [(gw, "ARS (H)", fdr), ...].
+    gk_rank: int = 0             # keepers: 1 = club's first choice, 2 = backup
+    horizon_proj: float = 0.0
+    fixture_run: list[tuple[int, str, int]] = field(default_factory=list)
+    # Projected points per gameweek (0 in a blank, two fixtures in a double),
+    # possibly further out than the look-ahead — feeds chip timing.
+    gw_proj: dict[int, float] = field(default_factory=dict)
 
     @property
     def cost_m(self) -> float:
@@ -362,6 +374,8 @@ def score_players(players: dict[int, Player], season_started: bool,
         # the API) and start probability (rotation). An injured player (avail 0)
         # or a flagged-out player (start_prob 0) scores nothing.
         play = min(avail, p.start_prob)
+        p.base_pm = base * team_mult
+        p.play = play
 
         per_match = base * fdr_mult * team_mult * mismatch_mult * play
         p.projected = round(per_match * max(p.n_fix, 1), 2)
@@ -393,3 +407,99 @@ def score_players(players: dict[int, Player], season_started: bool,
             p.reasons.append("strong team")
         if p.n_fix >= 2:
             p.reasons.append(f"{p.n_fix} fixtures")
+
+
+# How many gameweeks transfer and wildcard advice look ahead. One GW is noise
+# (a single tough fixture sinks a premium); much beyond ~5 the projections are
+# guesses about form and fitness that will have changed.
+LOOKAHEAD = 5
+
+
+def _lookahead_play(p: Player, k: int) -> float:
+    """P(plays) for the k-th upcoming GW (k=0 is next). Next GW uses the live
+    signal; later GWs let short-term doubts recover — a 'd' 50% flag usually
+    clears within a week, while an injury/suspension is only half-credited from
+    two GWs out (return dates are unknown). Left-the-club stays at zero."""
+    if k == 0 or p.status in ("u", "n"):
+        return p.play
+    if p.status == "d" or (p.status == "a" and p.play < p.start_prob):
+        return p.start_prob
+    if p.status in ("i", "s"):
+        return 0.5 * p.start_prob if k >= 2 else p.play
+    return p.play
+
+
+def attach_lookahead(players: dict[int, Player], fixtures: list[dict],
+                     start_event: int, horizon: int,
+                     strength: dict[int, float],
+                     team_short: dict[int, str],
+                     per_gw_horizon: int = 0) -> list[int]:
+    """Set ``horizon_proj`` = Σ projected points over GWs start..start+horizon-1,
+    pricing EACH fixture by its own difficulty and opponent (a blank GW adds 0,
+    a double adds two). Also fills ``gw_proj`` per gameweek over
+    max(horizon, per_gw_horizon) GWs for chip timing. Must run after
+    ``score_players`` (needs ``base_pm``). Returns the look-ahead GWs (clamped
+    to the season)."""
+    span = max(horizon, per_gw_horizon)
+    all_gws = [g for g in range(start_event, start_event + span) if g <= 38]
+    gws = all_gws[:horizon]
+    by_team: dict[int, list[tuple[int, int, int, bool]]] = {}
+    for fx in fixtures:
+        ev = fx.get("event")
+        if ev not in all_gws:
+            continue
+        h, a = fx["team_h"], fx["team_a"]
+        by_team.setdefault(h, []).append((ev, a, fx["team_h_difficulty"], True))
+        by_team.setdefault(a, []).append((ev, h, fx["team_a_difficulty"], False))
+    for fl in by_team.values():
+        fl.sort()
+    for p in players.values():
+        per_gw = {g: 0.0 for g in all_gws}
+        run = []
+        for ev, opp, fdr, home in by_team.get(p.team, []):
+            mult = (_fdr_multiplier(fdr)
+                    * _mismatch_multiplier(p.team_strength, strength.get(opp, 3.0)))
+            per_gw[ev] += p.base_pm * mult * _lookahead_play(p, ev - start_event)
+            if ev in gws:
+                run.append((ev, f"{team_short.get(opp, '?')} ({'H' if home else 'A'})",
+                            int(fdr)))
+        p.gw_proj = {g: round(v, 2) for g, v in per_gw.items()}
+        p.horizon_proj = round(sum(per_gw[g] for g in gws), 2)
+        p.fixture_run = run
+    return gws
+
+
+def rank_keepers(players: dict[int, Player],
+                 order: dict[str, list[str]] | None = None) -> None:
+    """Set ``gk_rank`` per club: 1 = first choice, 2 = the backup who plays if
+    he's out, 3+ = never plays. A hand-set ``order`` (team short name -> names)
+    wins; otherwise available keepers rank by starts, minutes, then price (with
+    no minutes to go on, clubs' #2s are usually priced above their #3s). Injured
+    / unavailable keepers rank after every available one."""
+    order = order or {}
+    by_team: dict[int, list[Player]] = {}
+    for p in players.values():
+        if p.pos == 1:
+            by_team.setdefault(p.team, []).append(p)
+    for gks in by_team.values():
+        manual = [n.lower() for n in order.get(gks[0].team_name, [])]
+
+        def key(p: Player):
+            pinned = manual.index(p.name.lower()) if p.name.lower() in manual \
+                else len(manual)
+            fit = p.status == "a" or (p.status == "d" and (p.chance or 0) >= 50)
+            return (pinned, not fit, -p.starts, -p.minutes, -p.cost)
+        for r, p in enumerate(sorted(gks, key=key), start=1):
+            p.gk_rank = r
+
+
+def keepers_ok(gks: list[Player]) -> bool:
+    """User rule for the two keepers: both are first choice at their clubs, OR
+    one is first choice and the other is THAT club's #2 (so the reserve plays
+    when the starter is out). A #3, or a #2 from another club, is dead weight.
+    Unranked keepers (gk_rank 0) are not judged."""
+    if len(gks) != 2 or any(g.gk_rank == 0 for g in gks):
+        return True
+    a, b = sorted(gks, key=lambda g: g.gk_rank)
+    return a.gk_rank == 1 and (b.gk_rank == 1
+                               or (b.gk_rank == 2 and b.team == a.team))

@@ -185,8 +185,14 @@ def _save_snapshot(team_id: int, current_gw: int, mine: dict) -> None:
             "team_id": int(team_id),
             "current_gw": int(current_gw),
             "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "picks": [{"element": p["element"]} for p in mine.get("picks", [])],
+            "picks": [{"element": p["element"],
+                       **({"selling_price": p["selling_price"]}
+                          if p.get("selling_price") is not None else {})}
+                      for p in mine.get("picks", [])],
             "transfers": mine.get("transfers", {}),
+            "chips": [{k: c.get(k) for k in ("name", "status_for_entry",
+                                             "played_by_entry")}
+                      for c in mine.get("chips", []) or []],
         }, indent=1))
     except OSError as e:
         print(f"[my-team] snapshot not written: {e}")
@@ -276,17 +282,41 @@ def fetch_squad_ids(team_id: int, gw: int) -> tuple[list[int], int]:
     snap = _load_snapshot(team_id, gw)
     if snap and snap.get("picks"):
         LAST_MY_TEAM = {"picks": snap["picks"],
-                        "transfers": snap.get("transfers", {})}
+                        "transfers": snap.get("transfers", {}),
+                        "chips": snap.get("chips", [])}
         SQUAD_SOURCE = f"snapshot {snap['fetched_at']}"
         bank = (snap.get("transfers") or {}).get("bank", 0)
         print(f"[my-team] using snapshot from {snap['fetched_at']} "
               f"(bank £{bank/10:.1f}m) — no credentials in this build")
         return [p["element"] for p in snap["picks"]], bank
     SQUAD_SOURCE = "picks"
+    LAST_MY_TEAM = None
     picks = _get(f"{BASE}/entry/{team_id}/event/{gw}/picks/")
     ids = [p["element"] for p in picks["picks"]]
     bank = (picks.get("entry_history", {}) or {}).get("bank", 0)
     return ids, bank
+
+
+def chips_played(upcoming_gw: int) -> dict[str, list[int]]:
+    """{chip: [GWs]} from the authenticated my-team view: chips already played
+    plus one ACTIVATED for the upcoming deadline (not yet public)."""
+    out: dict[str, list[int]] = {}
+    for c in (LAST_MY_TEAM or {}).get("chips", []) or []:
+        gws = [int(g) for g in (c.get("played_by_entry") or [])]
+        if c.get("status_for_entry") == "active":
+            gws.append(int(upcoming_gw))
+        if gws:
+            out.setdefault(c.get("name", ""), []).extend(gws)
+    return out
+
+
+def selling_prices() -> dict[int, int]:
+    """{element: selling price in tenths} from the last my-team payload (or its
+    snapshot). Empty when the squad came from public picks — callers then fall
+    back to ``now_cost`` and must label budgets as estimated."""
+    return {p["element"]: p["selling_price"]
+            for p in (LAST_MY_TEAM or {}).get("picks", [])
+            if p.get("selling_price") is not None}
 
 
 def fetch_live_team(team_id: int, gw: int, bootstrap: dict) -> LiveTeam:

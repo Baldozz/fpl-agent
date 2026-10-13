@@ -33,6 +33,19 @@ def load_must_include() -> list[str]:
     return list(_load().get("must_include", []))
 
 
+def load_keeper_order() -> dict[str, list[str]]:
+    """Club keeper depth the API can't express, as {"MCI": ["Donnarumma",
+    "Trafford"]} (team short name -> web_names, #1 first). Hand-edited."""
+    return {k: list(v) for k, v in (_load().get("keeper_order", {}) or {}).items()}
+
+
+def load_chips_used() -> dict[str, list[int]]:
+    """Chips you've played that the public API can't see yet (e.g. a wildcard
+    activated before the deadline), as {"wildcard": [7]}. Hand-edited."""
+    raw = _load().get("chips_used", {}) or {}
+    return {k: [int(g) for g in v] for k, v in raw.items() if isinstance(v, list)}
+
+
 def merge(base: dict[str, dict], extra: dict[str, dict]) -> dict[str, dict]:
     """Merge Grok signals (``extra``) over file overrides (``base``).
 

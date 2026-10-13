@@ -151,3 +151,67 @@ def attach_power(league: League, players: dict) -> None:
                           for p in row.team.xi if p.element in players)
     for i, row in enumerate(sorted(scored, key=lambda r: -r.power), start=1):
         row.power_rank = i
+
+
+# Ownership bands used to tag recommendations. "Template" = most rivals already
+# have him (owning him protects your rank, selling him exposes it); a
+# "differential" is a pick few rivals have (gains you places when he hauls).
+TEMPLATE_OWN = 0.40
+DIFFERENTIAL_OWN = 0.10
+
+
+@dataclass
+class Ownership:
+    """How often each player appears across rivals' 15-man squads."""
+    pct: dict[int, float]          # element id -> fraction of rival squads (0..1)
+    n_squads: int                  # rival squads actually read
+    n_members: int                 # rivals in the standings we fetched
+    gw: int                        # picks are as of this GW's deadline
+    league_name: str = ""
+    truncated: bool = False        # standings/teams capped before the full league
+
+    @property
+    def partial(self) -> bool:
+        return self.truncated or self.n_squads < self.n_members
+
+    def of(self, pid: int) -> float:
+        return self.pct.get(pid, 0.0)
+
+    def tag(self, pid: int) -> str:
+        o = self.of(pid)
+        if o >= TEMPLATE_OWN:
+            return "template"
+        if o <= DIFFERENTIAL_OWN:
+            return "differential"
+        return ""
+
+    @property
+    def caveat(self) -> str:
+        """Plain-English note on how complete / current this data is."""
+        s = (f"Varsical ownership from {self.n_squads} of {self.n_members} rival "
+             f"squads, as entered at the GW{self.gw} deadline — rivals' transfers "
+             f"since then aren't public.")
+        if self.partial:
+            s += " Incomplete: some squads couldn't be read or the league was capped."
+        return s
+
+
+def league_ownership(league: League, exclude_entry: int | None = None,
+                     max_teams: int = 30) -> Ownership | None:
+    """Ownership fraction per player across rival squads (XI + bench).
+
+    ``exclude_entry`` (your own team) is left out so the numbers describe the
+    opposition. None when no rival squad could be read."""
+    rivals = [r for r in league.rows if r.entry_id != exclude_entry]
+    teams = [r.team for r in rivals if r.team]
+    if not teams:
+        return None
+    count: dict[int, int] = {}
+    for t in teams:
+        for p in t.xi + t.bench:
+            count[p.element] = count.get(p.element, 0) + 1
+    return Ownership(
+        pct={pid: c / len(teams) for pid, c in count.items()},
+        n_squads=len(teams), n_members=len(rivals), gw=league.gw,
+        league_name=league.name,
+        truncated=len(league.rows) > max_teams or len(league.rows) >= 60)

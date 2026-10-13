@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .model import Player, captain_score
+from .model import Player, captain_score, keepers_ok
 
 BUDGET = 1000  # £100.0m in tenths
 # Per-started-forward attacking-ceiling bonus (tips near-ties to 3-4-3). Raise
@@ -23,6 +23,12 @@ ATTACK_CEILING = 1.0
 # £4.0m (GK/DEF) and £4.5m (MID/FWD), so 4.0+4.0+4.0+4.5 = 16.5. At this floor
 # the bench is pure cheap fodder (won't reliably play) — all the money is in XI.
 MAX_BENCH_COST = 165
+# Players at or below this price stay ILP candidates even when they project 0.
+FODDER_MAX_COST = 45
+# If the keeper rule leaves no squad under MAX_BENCH_COST (e.g. the only legal
+# reserve GK costs £4.5m), relax the bench cap in these steps rather than fall
+# back to greedy. The cap actually used is logged.
+BENCH_CAP_STEPS = (0, 5, 10, 20)
 # Gentle nudge toward cheaper bench *within* the cap; the cover reward keeps the
 # first subs playable.
 BENCH_COST_WEIGHT = 0.02
@@ -88,12 +94,31 @@ def _order_bench(squad: list[Player], xi: list[Player]) -> list[Player]:
 
 
 def optimize_ilp(players: list[Player], formation: tuple[int, int, int] | None = None,
-                 must_include: set[int] | None = None):
+                 must_include: set[int] | None = None,
+                 points: dict[int, float] | None = None,
+                 budget: int = BUDGET):
+    """``_solve_ilp`` with the bench cap relaxed step-wise if it's infeasible."""
+    for step in BENCH_CAP_STEPS:
+        res = _solve_ilp(players, formation, must_include, points, budget,
+                         MAX_BENCH_COST + step)
+        if res is not None:
+            if step:
+                print(f"[optimizer] bench cap raised to £{(MAX_BENCH_COST + step)/10:.1f}m "
+                      "to satisfy the keeper rule")
+            return res
+    return None
+
+
+def _solve_ilp(players: list[Player], formation: tuple[int, int, int] | None,
+               must_include: set[int] | None, points: dict[int, float] | None,
+               budget: int, bench_cap: int):
     """Return (squad, xi) as lists, or None if no solver / not optimal.
 
     ``formation`` pins the starting XI outfield shape as (DEF, MID, FWD), e.g.
     ``(3, 4, 3)`` for 3-4-3. When None the shape is free within the legal ranges.
     ``must_include`` is a set of player ids forced into the 15-man squad.
+    ``points`` replaces ``projected`` as the objective (e.g. multi-GW look-ahead
+    for a wildcard draft); ``budget`` is the spend cap in tenths.
     """
     try:
         import pulp
@@ -101,8 +126,13 @@ def optimize_ilp(players: list[Player], formation: tuple[int, int, int] | None =
         return None
 
     must_include = must_include or set()
-    # Forced players must be candidates even if their projection is ~0.
-    avail = [p for p in players if p.projected > 0 or p.id in must_include]
+    # Forced players must be candidates even if their projection is ~0. So must
+    # cheap available fodder: a £4.0m reserve keeper projects 0 (he never plays)
+    # yet is exactly the right bench GK — without him the MAX_BENCH_COST floor
+    # can be infeasible and the solve silently falls back to greedy.
+    pts = points if points is not None else {p.id: p.projected for p in players}
+    avail = [p for p in players if pts.get(p.id, 0) > 0 or p.id in must_include
+             or (p.cost <= FODDER_MAX_COST and p.status == "a")]
     prob = pulp.LpProblem("fpl_squad", pulp.LpMaximize)
     x = {p.id: pulp.LpVariable(f"x_{p.id}", cat="Binary") for p in avail}
     s = {p.id: pulp.LpVariable(f"s_{p.id}", cat="Binary") for p in avail}  # in XI
@@ -129,18 +159,21 @@ def optimize_ilp(players: list[Player], formation: tuple[int, int, int] | None =
     # a striker's goal upside, and fielding more forwards (e.g. 3-4-3) gives the
     # best chance of owning the actual goal-scorers. Small enough that it only
     # tips genuine near-ties toward the attacking shape, never a clear call.
-    attack = {i: (ATTACK_CEILING if pm[i].pos == 4 else 0.0) for i in x}
+    # Scaled with the objective so a 5-GW look-ahead keeps the same tie-break role.
+    scale = 1.0 if points is None else max(
+        1.0, sum(pts.get(i, 0) for i in x) / max(1e-9, sum(pm[i].projected for i in x)))
+    attack = {i: (ATTACK_CEILING * scale if pm[i].pos == 4 else 0.0) for i in x}
     prob += (
-        pulp.lpSum(s[i] * pm[i].projected for i in x)
+        pulp.lpSum(s[i] * pts.get(i, 0) for i in x)
         + pulp.lpSum(s[i] * attack[i] for i in x)
-        + 1.6 * pulp.lpSum(bench[i] * cover[i] for i in x)
+        + 1.6 * scale * pulp.lpSum(bench[i] * cover[i] for i in x)
         - BENCH_COST_WEIGHT * pulp.lpSum(bench[i] * pm[i].cost for i in x)
     )
 
     prob += pulp.lpSum(x.values()) == 15
     prob += pulp.lpSum(s.values()) == 11
-    prob += pulp.lpSum(pm[i].cost * x[i] for i in x) <= BUDGET
-    prob += pulp.lpSum(bench[i] * pm[i].cost for i in x) <= MAX_BENCH_COST
+    prob += pulp.lpSum(pm[i].cost * x[i] for i in x) <= budget
+    prob += pulp.lpSum(bench[i] * pm[i].cost for i in x) <= bench_cap
     for i in x:
         prob += s[i] <= x[i]
     for pos, q in SQUAD_QUOTA.items():
@@ -159,6 +192,20 @@ def optimize_ilp(players: list[Player], formation: tuple[int, int, int] | None =
     for i in must_include:
         if i in x:
             prob += x[i] == 1
+    # Keeper rule (model.keepers_ok): a club's #3+ never; a #2 only alongside his
+    # own club's #1, and never in the XI. Skipped if keepers weren't ranked.
+    if any(pm[i].gk_rank for i in x if pm[i].pos == 1):
+        for j in x:
+            g = pm[j]
+            if g.pos != 1 or g.gk_rank in (0, 1):
+                continue
+            if g.gk_rank >= 3:
+                prob += x[j] == 0
+                continue
+            prob += s[j] == 0
+            prob += x[j] <= pulp.lpSum(x[i] for i in x if pm[i].pos == 1
+                                       and pm[i].team == g.team
+                                       and pm[i].gk_rank == 1)
 
     prob.solve(pulp.PULP_CBC_CMD(msg=0))
     if pulp.LpStatus[prob.status] != "Optimal":
@@ -185,6 +232,10 @@ def optimize_greedy(players: list[Player]) -> list[Player]:
             continue
         if spend + p.cost > BUDGET:
             continue
+        if p.pos == 1:
+            gks = [q for q in squad if q.pos == 1]
+            if (not gks and p.gk_rank > 1) or (gks and not keepers_ok(gks + [p])):
+                continue
         squad.append(p)
         spend += p.cost
         per_club[p.team] = per_club.get(p.team, 0) + 1

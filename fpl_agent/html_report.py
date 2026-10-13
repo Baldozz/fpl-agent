@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 from .model import Player
 from .news import Headline
 from .optimizer import Squad
+from .transfers import SHOWN_OPTIONS
 
 POS_ROWS = [(1, "Goalkeeper"), (2, "Defenders"), (3, "Midfielders"),
             (4, "Forwards")]
@@ -681,6 +682,341 @@ EXPERT_CSS = """
 """
 
 
+ADVICE_CSS = """
+.lanote{font-size:12.5px;color:var(--muted);margin:0 0 12px;line-height:1.55}
+.lanote b{color:var(--ink)}
+.opt{border-top:1px solid var(--line);padding:12px 0;display:grid;
+  grid-template-columns:28px 1fr;gap:4px 10px}
+.opt:first-child{border-top:0}
+.optlist:not(.all) .opt.more{display:none}
+.morebtn{margin-top:10px;background:var(--panel);cursor:pointer;font:inherit;font-weight:600;font-size:13px}
+.opt .rk{font-weight:800;color:var(--muted);font-variant-numeric:tabular-nums;padding-top:2px}
+.opt .mv{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.opt .nums{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px;color:var(--muted);
+  font-variant-numeric:tabular-nums;margin-top:4px}
+.opt .nums b{color:var(--ink)}
+.pos-v{color:var(--green)!important} .neg-v{color:var(--magenta)!important}
+.opt ul{margin:6px 0 0;padding-left:18px;font-size:12.5px;color:var(--muted)}
+.opt ul li{margin:3px 0}
+.opt.best{background:rgba(0,176,106,.07);border-radius:10px;padding:12px 8px;margin:0 -8px}
+.tag{display:inline-block;padding:1px 8px;border-radius:20px;font-size:11px;font-weight:700;
+  border:1px solid var(--line);color:var(--ink)}
+.tag.tmpl{background:rgba(242,169,0,.16);border-color:rgba(242,169,0,.45)}
+.tag.diff{background:rgba(96,120,255,.14);border-color:rgba(96,120,255,.45)}
+.tag.warn{background:rgba(233,0,82,.10);border-color:rgba(233,0,82,.35)}
+.tag.hit{background:rgba(233,0,82,.16);border-color:rgba(233,0,82,.5)}
+.tag.free{background:rgba(0,176,106,.14);border-color:rgba(0,176,106,.45)}
+.fxr{display:inline-flex;gap:3px;flex-wrap:wrap;vertical-align:middle}
+.fx{font-size:10.5px;font-weight:700;padding:1px 5px;border-radius:4px;color:#fff;white-space:nowrap}
+.fx.f1,.fx.f2{background:#1f9d57}.fx.f3{background:#5b6b7b}.fx.f4{background:#d9772b}.fx.f5{background:#c02a4a}
+.wcstats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+@media(max-width:760px){.wcstats{grid-template-columns:1fr 1fr}}
+.wcstats>div{background:var(--bg);border-radius:10px;padding:8px 10px}
+.wcstats .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700}
+.wcstats .v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
+.wcchg{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 10px}
+.tblwrap{overflow-x:auto}
+.tblwrap td,.tblwrap th{white-space:nowrap}
+tr.bench td{color:var(--muted)}
+"""
+
+_POS3 = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
+
+
+def _fx_run(p, limit: int = 6) -> str:
+    """Upcoming fixtures as FDR-coloured chips (UPPER = home, lower = away)."""
+    run = getattr(p, "fixture_run", None) or []
+    if not run:
+        return '<span class="muted">no fixtures</span>'
+    chips = []
+    for gw, lbl, fdr in run[:limit]:
+        team = lbl.split(" ")[0]
+        team = team if "(H)" in lbl else team.lower()
+        chips.append(f'<span class="fx f{max(1, min(5, fdr))}" '
+                     f'title="GW{gw} {_esc(lbl)} · FDR {fdr}">{_esc(team)}</span>')
+    return f'<span class="fxr">{"".join(chips)}</span>'
+
+
+def _own(d, pid: int) -> str:
+    o = getattr(d, "ownership", None)
+    return f"{o.of(pid):.0%}" if o is not None else "—"
+
+
+def _own_tag(d, pid: int) -> str:
+    o = getattr(d, "ownership", None)
+    if o is None:
+        return ""
+    t, pct = o.tag(pid), f"{o.of(pid):.0%}"
+    if t == "template":
+        return f'<span class="tag tmpl" title="Popular in Varsical">popular · {pct}</span>'
+    if t == "differential":
+        return f'<span class="tag diff" title="Few Varsical rivals own">differential · {pct}</span>'
+    return f'<span class="tag" title="Varsical ownership">{pct} own</span>'
+
+
+def _money(cost_delta_m: float) -> str:
+    """Bank impact of a £m cost change: −£1.2m spends, +£0.8m frees money."""
+    v = -cost_delta_m
+    return f"{'+' if v >= 0 else '−'}£{abs(v):.1f}m"
+
+
+def _price_note(d) -> str:
+    if getattr(d, "prices_exact", False):
+        return "Budget uses your <b>actual selling prices</b> from FPL."
+    return ("Budget is <b>estimated</b>: selling prices assumed equal to current "
+            "price (FPL keeps half of any rise, so real sale values can be lower).")
+
+
+def _ownership_note(d) -> str:
+    o = getattr(d, "ownership", None)
+    if o is None:
+        return ("Varsical ownership <b>not loaded</b> for this build, so "
+                "popular/differential tags are missing.")
+    return _esc(o.caveat).replace("Incomplete:", "<b>Incomplete:</b>")
+
+
+def render_transfer_options(d) -> str:
+    """Ranked transfer options over the look-ahead."""
+    n = len(getattr(d, "lookahead_gws", []) or []) or 1
+    opts = getattr(d, "options", []) or []
+    head = (f'<h2 class="sec">🔁 Transfer options · look-ahead '
+            f'{_esc(d.lookahead_label)}</h2>')
+    note = (f'<p class="lanote">One-for-one swaps ranked by <b>net projected points over '
+            f'{_esc(d.lookahead_label)}</b> (after any −4 hit), with a small '
+            f'penalty per £m spent so the cheaper of two similar moves ranks first. '
+            f'{d.free_transfers} free transfer(s), £{d.bank/10:.1f}m in the bank. '
+            f'{_price_note(d)} {_ownership_note(d)}</p>')
+    if d.free_transfers <= 0 and opts:
+        note += ('<p class="srcnote">No free transfers left: every option below '
+                 'costs a points hit and is shown net of it. The plan is to hold — '
+                 'taking a hit is your call.</p>')
+    if getattr(d, "keeper_issue", ""):
+        note += f'<p class="srcnote">🧤 {_esc(d.keeper_issue)}</p>'
+    if not opts:
+        msg = ("No move is worth a −4 hit over the look-ahead — hold."
+               if d.free_transfers <= 0 else
+               "No move clears the bar over the look-ahead — hold / roll the transfer.")
+        return f'{head}<div class="card">{note}<p class="hold">✓ {msg}</p></div>'
+    plan = [(m.out.id, m.in_.id) for m in getattr(d, "moves", [])]
+    rows = []
+    for k, o in enumerate(opts, start=1):
+        best = o.hit == 0 and [(m.out.id, m.in_.id) for m in o.moves] == plan
+        mv = " ".join(
+            f'<span class="pill out">OUT {_esc(m.out.name)}</span>'
+            f'<span class="pill in">IN {_esc(m.in_.name)}</span>{_own_tag(d, m.in_.id)}'
+            for m in o.moves)
+        if best:
+            tags = '<span class="tag free">★ recommended</span>'
+        elif o.hit:
+            tags = f'<span class="tag hit">−{o.hit} pt hit</span>'
+        else:
+            tags = '<span class="tag free">free</span>'
+        if "fixes keeper rule" in o.tags:
+            tags += ' <span class="tag warn">fixes keeper rule</span>'
+        if "fixes a flag" in o.tags:
+            tags += ' <span class="tag warn">fixes a flag</span>'
+        net = f' → net <b>{o.net:+.1f}</b>' if o.hit else ""
+        swing = ""
+        if o.league_swing is not None:
+            cls = "pos-v" if o.league_swing >= 0 else "neg-v"
+            swing = ('<span title="Gain weighted by how few Varsical rivals own each '
+                     'player — what the move gains you on the league table">'
+                     f'vs Varsical <b class="{cls}">{o.league_swing:+.1f}</b></span>')
+        why = "".join(
+            f'<li><b>{_esc(m.out.name)} → {_esc(m.in_.name)}</b> '
+            f'({m.out.horizon_proj:.1f} → {m.in_.horizon_proj:.1f} xPts): '
+            f'{_esc(m.reason)}. Next: {_fx_run(m.in_)}</li>' for m in o.moves)
+        hidden = " more" if k > SHOWN_OPTIONS else ""
+        rows.append(
+            f'<div class="opt{" best" if best else ""}{hidden}"><div class="rk">#{k}</div>'
+            f'<div><div class="mv">{mv} {tags}</div>'
+            f'<div class="nums"><span>{n}-GW gain <b class="pos-v">+{o.gain:.1f}</b>{net}</span>'
+            f'<span>next GW <b>{o.gain_next:+.1f}</b></span>'
+            f'<span>budget <b>{_money(o.cost_delta)}</b> → £{o.bank_after/10:.1f}m ITB</span>'
+            f'{swing}</div><ul>{why}</ul></div></div>')
+    extra = len(opts) - SHOWN_OPTIONS
+    more = ""
+    if extra > 0:
+        more = (f'<button type="button" class="btn morebtn" data-n="{extra}" '
+                f'onclick="var l=this.previousElementSibling,a=l.classList.toggle(\'all\');'
+                f'this.textContent=a?\'Show top {SHOWN_OPTIONS} only\':'
+                f'\'Show \'+this.dataset.n+\' more\'">Show {extra} more</button>')
+    return (f'{head}<div class="card">{note}<div class="optlist">{"".join(rows)}</div>'
+            f'{more}</div>')
+
+
+def render_wildcard(d) -> str:
+    """Full-squad wildcard draft vs your current team."""
+    wc = getattr(d, "wildcard", None)
+    head = (f'<h2 class="sec">🃏 Wildcard draft · look-ahead '
+            f'{_esc(d.lookahead_label)}</h2>')
+    half = "1st" if d.upcoming_gw <= 19 else "2nd"
+    used = getattr(d, "wildcard_used", []) or []
+    if not d.wildcard_available:
+        return (f'<p class="lanote" style="margin-top:24px">🃏 Wildcard already '
+                f'played this half (GW{", GW".join(map(str, used))}) — no draft '
+                f'until GW20.</p>' if half == "1st" else
+                f'<p class="lanote" style="margin-top:24px">🃏 Both wildcards '
+                f'played — no draft.</p>')
+    if wc is None:
+        return (f'{head}<div class="card"><p class="muted">Wildcard draft '
+                f'unavailable in this build (the optimiser could not solve).</p></div>')
+    n = len(d.lookahead_gws) or 1
+    chip = (f"Active for GW{d.upcoming_gw}" if d.wildcard_active
+            else f"Available ({half} half)")
+    xi_ids = {p.id for p in wc.xi}
+    cur_ids = {p.id for p in d.current}
+    rows = []
+    for p in wc.xi + wc.bench:
+        badges = " (C)" if p.id == wc.captain.id else ""
+        if p.id not in cur_ids:
+            badges += ' <span class="tag free">new</span>'
+        if p.id not in xi_ids:
+            badges += ' <span class="muted">· bench</span>'
+        rows.append(
+            f'<tr class="{"" if p.id in xi_ids else "bench"}"><td>{_POS3[p.pos]}</td>'
+            f'<td>{_esc(p.name)}{badges}</td><td>{_esc(p.team_name)}</td>'
+            f'<td class="n">£{p.cost_m:.1f}</td><td class="n">{p.horizon_proj:.1f}</td>'
+            f'<td>{_fx_run(p)}</td><td class="n">{_own(d, p.id)}</td></tr>')
+    outs = "".join(f'<span class="pill out">{_esc(p.name)}</span>' for p in wc.outs) \
+        or '<span class="muted">none</span>'
+    ins = "".join(f'<span class="pill in">{_esc(p.name)}</span>' for p in wc.ins) \
+        or '<span class="muted">none</span>'
+    own_line = ""
+    o = getattr(d, "ownership", None)
+    if o is not None:
+        tmpl = sum(1 for p in wc.squad if o.tag(p.id) == "template")
+        diff = [p.name for p in wc.xi if o.tag(p.id) == "differential"]
+        own_line = (f'<p class="lanote">Varsical context: <b>{tmpl}</b> popular '
+                    f'pick(s) in the 15; XI differentials: '
+                    f'<b>{_esc(", ".join(diff)) if diff else "none"}</b>.</p>')
+    gcls = "pos-v" if wc.gain >= 0 else "neg-v"
+    est = "" if d.prices_exact else " (est.)"
+    return (
+        f'{head}<div class="card">'
+        f'<p class="lanote">The best legal 15 from scratch for <b>{_esc(d.lookahead_label)}</b>: '
+        f'2 GK / 5 DEF / 5 MID / 3 FWD, max 3 per club, 3-4-3 XI and a cheap bench; '
+        f'the reserve keeper is a first-choice keeper or the #2 at the starter\'s club, '
+        f'spending your squad\'s sale value plus bank. {_price_note(d)} '
+        f'<b>Advisory only:</b> nothing is submitted and no chip is played.</p>'
+        f'<div class="wcstats">'
+        f'<div><div class="k">XI xPts · {n} GW</div><div class="v">{wc.xi_points:.1f}</div></div>'
+        f'<div><div class="k">vs current XI</div><div class="v {gcls}">{wc.gain:+.1f}</div></div>'
+        f'<div><div class="k">Spend / budget{est}</div><div class="v">£{wc.cost/10:.1f}m'
+        f'<span class="muted" style="font-size:12px"> / £{wc.budget/10:.1f}m</span></div></div>'
+        f'<div><div class="k">Wildcard chip</div><div class="v" style="font-size:14px">'
+        f'{_esc(chip)}</div></div></div>'
+        f'<div class="muted" style="font-size:12px">OUT ({len(wc.outs)})</div>'
+        f'<div class="wcchg">{outs}</div>'
+        f'<div class="muted" style="font-size:12px">IN ({len(wc.ins)})</div>'
+        f'<div class="wcchg">{ins}</div>{own_line}'
+        f'<div class="tblwrap"><table><tr><th>Pos</th><th>Player</th><th>Team</th>'
+        f'<th class="n">£m</th><th class="n">xPts</th><th>Fixtures</th>'
+        f'<th class="n">Varsical</th></tr>{"".join(rows)}</table></div>'
+        f'<p class="lanote" style="margin-top:10px">XI xPts = best 3-4-3 over the '
+        f'look-ahead for each squad (captain not doubled). Gameweeks further out '
+        f'assume today\'s form and fitness, so they are less certain.</p></div>')
+
+
+CHIP_CSS = """
+.chiprow{padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
+.chiprow:last-of-type{border-bottom:0}
+.chiprow .cn{font-weight:800}
+.chiprow .cv{color:var(--muted);font-size:12.5px;line-height:1.5}
+.chiprow .cv b{color:var(--ink)}
+.chipgrid{border-collapse:separate;border-spacing:2px;width:100%;margin-top:10px;font-size:12px}
+.chipgrid th{font-size:10.5px;font-weight:700;color:var(--muted);text-align:center;
+  padding:2px;border:0;letter-spacing:0;text-transform:none;white-space:nowrap}
+.chipgrid th.rl{text-align:left}
+.chipgrid td{text-align:center;padding:5px 2px;border:0;border-radius:4px;
+  font-variant-numeric:tabular-nums;color:var(--ink);cursor:default}
+.chipgrid td.rl{text-align:left;font-weight:700;padding-left:0;white-space:nowrap}
+.chipgrid td.pl{outline:2px solid var(--green);outline-offset:-2px;font-weight:800}
+.chipgrid td.na{color:var(--muted)}
+.chipgrid .wk{display:block;font-size:9.5px;font-weight:700;color:var(--muted)}
+"""
+
+
+def _cell_bg(v: float, lo: float, hi: float) -> str:
+    """Sequential single hue (brand green), light->dark by magnitude within the
+    chip's own row (each chip has its own scale)."""
+    t = 0.0 if hi <= lo else (v - lo) / (hi - lo)
+    return f"background:rgba(0,176,106,{0.08 + 0.47 * t:.2f})"
+
+
+def _chip_verdict(c, upcoming_gw: int) -> str:
+    if not c.available:
+        when = ", GW".join(map(str, c.used)) or "?"
+        back = " — a new one from GW20" if upcoming_gw <= 19 else ""
+        return f"Played (GW{when}){back}."
+    if c.used and upcoming_gw in c.used:
+        return f"<b>Active for GW{upcoming_gw}</b> (+{c.values.get(upcoming_gw, 0):.1f})."
+    if c.best_gw is None:
+        return "Couldn't value it this build."
+    best = f"GW{c.best_gw} (+{c.best_value:.1f})"
+    if c.clear and c.planned_gw == upcoming_gw:
+        txt = f"<b>Play it this week</b>: GW{c.best_gw} is its best week (+{c.best_value:.1f})."
+    elif c.clear:
+        txt = f"Best week <b>{best}</b>, clearly ahead of the rest — hold until then."
+    else:
+        ru = (f"; GW{c.runner_up_gw} close (+{c.values[c.runner_up_gw]:.1f})"
+              if c.runner_up_gw else "")
+        txt = f"<b>No clear week yet</b> — best {best}{ru}. Hold."
+    if c.planned_gw and c.planned_gw != c.best_gw:
+        txt += f" Pencilled in for GW{c.planned_gw} (one chip per week)."
+    return txt
+
+
+def render_chip_calendar(d) -> str:
+    """Chip value by gameweek (projection-based) + per-chip verdicts."""
+    plans = getattr(d, "chip_plan", None) or []
+    if not plans:
+        return ""
+    gws = sorted({g for c in plans for g in c.values})
+    dgw, bgw = set(getattr(d, "dgw_gws", [])), set(getattr(d, "bgw_gws", []))
+    rows, verdicts = [], []
+    for c in plans:
+        extra = []
+        if c.available and c.gws_left is not None and c.gws_left <= 4:
+            extra.append(f"⏳ expires after GW{c.expires_gw} — {c.gws_left} GW(s) left")
+        if c.rivals_total:
+            extra.append(f"{c.rivals_used}/{c.rivals_total} Varsical rivals have played it")
+        verdicts.append(
+            f'<div class="chiprow"><span class="cn">{_esc(c.label)}</span> '
+            f'<div class="cv">{_chip_verdict(c, d.upcoming_gw)}'
+            f'{"<br>" + " · ".join(_esc(e) for e in extra) if extra else ""}</div></div>')
+        vals = list(c.values.values())
+        lo, hi = (min(vals), max(vals)) if vals else (0, 0)
+        cells = []
+        for g in gws:
+            if g not in c.values:
+                cells.append('<td class="na">—</td>')
+                continue
+            v = c.values[g]
+            pl = " pl" if g == c.planned_gw else ""
+            tip = f"{c.label} in GW{g}: +{v:.1f} pts vs your current squad"
+            if g == c.planned_gw:
+                tip += " (planned week)"
+            cells.append(f'<td class="{pl.strip()}" style="{_cell_bg(v, lo, hi)}" '
+                         f'title="{_esc(tip)}">{"★" if pl else ""}{v:.0f}</td>')
+        rows.append(f'<tr><td class="rl">{_esc(c.label)}</td>{"".join(cells)}</tr>')
+
+    def head(g):
+        tag = "DGW" if g in dgw else "BGW" if g in bgw else ""
+        return f'<th>GW{g}<span class="wk">{tag or "&nbsp;"}</span></th>'
+    grid = (f'<div class="tblwrap"><table class="chipgrid"><tr><th class="rl">'
+            f'pts gained</th>{"".join(head(g) for g in gws)}</tr>'
+            f'{"".join(rows)}</table></div>') if gws else ""
+    return (
+        f'<div class="card"><h3>🃏 Chip calendar</h3>{"".join(verdicts)}{grid}'
+        f'<p class="lanote" style="margin:10px 0 0">Projected points each chip adds '
+        f'in each week vs your current 15 (no other transfers). Free Hit = best '
+        f'one-week squad; Wildcard = the 5 GWs after playing it; Bench Boost = your '
+        f'bench; Triple Captain = the extra captain score. Shading is per chip; '
+        f'★ = planned week (one chip per gameweek). Weeks further out are less '
+        f'certain. Advisory only — no chip is played for you.</p></div>')
+
+
 def render_dashboard_html(d, headlines: list[Headline] | None = None,
                           full_document: bool = True, expert_intel=None,
                           formation_rec=None, chip_rec=None,
@@ -712,24 +1048,24 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None,
         rows = "".join(
             f'<div class="move"><span class="pill out">OUT {_esc(m.out.name)}</span>'
             f'<span class="pill in">IN {_esc(m.in_.name)}</span>'
-            f'<span class="gain">+{m.gain:.1f}</span>'
+            f'<span class="gain" title="projected points over {_esc(d.lookahead_label)}">'
+            f'+{m.gain:.1f}</span>'
             f'<div style="flex-basis:100%;font-size:12px;color:var(--muted)">'
-            f'{_esc(m.reason)} · net £{m.cost_delta:+.1f}m</div></div>'
+            f'{_esc(m.reason)} · budget {_money(m.cost_delta)}</div></div>'
             for m in d.moves)
-        transfers = note + done + rows
+        transfers = (note + done + rows
+                     + f'<p class="lanote" style="margin:8px 0 0">Gain = projected '
+                       f'points over {_esc(d.lookahead_label)}. Alternatives and a '
+                       f'wildcard draft further down.</p>')
     elif done:
-        transfers = note + done + ('<p class="hold">✓ Transfer made — no further moves '
-                            'this week (another would cost a -4 hit).</p>')
+        transfers = note + done + ('<p class="hold">✓ Transfer made — hold. Any further '
+                            'move costs a −4 hit; options are listed below if you '
+                            'want one.</p>')
     else:
         transfers = note + '<p class="hold">✓ No transfer needed — hold your team.</p>'
 
-    flagged = ("".join(f"<span>{_esc(p.name)} — {_esc(p.news or 'rotation risk')}</span>"
-                       for p in d.flagged) or
-               '<span style="background:none;color:var(--muted)">None flagged 👍</span>')
-    opps = "".join(
-        f'<tr><td>{_esc(p.name)}</td><td>{_esc(p.team_name)}</td>'
-        f'<td class="n">£{p.cost_m:.1f}</td><td class="n">{p.projected:.1f}</td></tr>'
-        for p in d.opportunities)
+    options_html = render_transfer_options(d)
+    wildcard_html = render_wildcard(d)
     histrows = "".join(
         f'<tr><td class="n">{h.gw}</td><td class="n">{h.points}</td>'
         f'<td>{_esc(h.captain)}</td><td class="n">{h.bench_points}</td>'
@@ -745,7 +1081,9 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None,
     own_clubs = {p.team_name for p in d.current} if getattr(d, "current", None) else set()
     expert_html = render_expert_watch(expert_intel, own_clubs=own_clubs)
     fcard = render_formation_card(formation_rec)
-    ccard = render_chip_card(chip_rec, chips_available=chips_available)
+    # Projection-based chip calendar; the calendar-only card is the fallback.
+    ccard = (render_chip_calendar(d)
+             or render_chip_card(chip_rec, chips_available=chips_available))
     strategy_html = f'<div class="grid2">{fcard}{ccard}</div>' if (fcard or ccard) else ""
     nav = ('<div class="btnrow"><a class="btn" href="./live.html">▶ Live scores</a>'
            '<a class="btn" href="./league.html">🏆 Varsical league</a></div>'
@@ -778,24 +1116,22 @@ def render_dashboard_html(d, headlines: list[Headline] | None = None,
     </div>
     {strategy_html}
     {expert_html}
-    <div class="grid2">
-      <div class="card"><h3>⚠️ Flagged in your squad</h3><div class="flag-list">{flagged}</div></div>
-      <div class="card"><h3>💡 Opportunities (not owned)</h3>
-        <table><tr><th>Player</th><th>Team</th><th class="n">£m</th><th class="n">Proj</th></tr>{opps}</table></div>
-    </div>
     {news_html}
+    {options_html}
+    {wildcard_html}
     <h2 class="sec">📅 Previous gameweeks</h2>
     <div class="card" style="overflow-x:auto">
       <table><tr><th class="n">GW</th><th class="n">Pts</th><th>Captain</th>
       <th class="n">Bench</th><th class="n">Transfers</th><th class="n">OR</th><th>Chip</th></tr>
       {histrows}</table></div>
     <footer><div>Built by the FPL Agent · <a href="https://github.com/Baldozz/fpl-agent">source</a></div>
-    <div class="disc">Transfer suggestions use projected points and now-cost as sell price —
-    confirm on the FPL site before committing.</div></footer>"""
+    <div class="disc">Advisory only — the agent never submits transfers or plays chips;
+    enter any change yourself on the FPL site. Transfer and wildcard advice use projected
+    points over {_esc(d.lookahead_label)}{'' if d.prices_exact else ', with current price as an estimated sell price'}.</div></footer>"""
     if not full_document:
         return body
     return _doc(f"FPL Plan — GW{d.upcoming_gw}", body,
-                DASH_CSS + EXPERT_CSS + PLANNED_CSS, JS)
+                DASH_CSS + EXPERT_CSS + PLANNED_CSS + ADVICE_CSS + CHIP_CSS, JS)
 
 
 MY_ENTRY_ID = 8799067
@@ -1268,7 +1604,8 @@ def render_site(d, live_by_gw: dict, league, headlines, available_gws: list[int]
         f'<div id="tab-team" class="pane">{team_tab}</div>'
         f'<div id="tab-league" class="pane">{lg}</div>'
         f'</div>')
-    css = CSS + DASH_CSS + LIVE_CSS + LEAGUE_CSS + SITE_CSS + EXPERT_CSS + PLANNED_CSS
+    css = (CSS + DASH_CSS + LIVE_CSS + LEAGUE_CSS + SITE_CSS + EXPERT_CSS
+           + PLANNED_CSS + ADVICE_CSS + CHIP_CSS)
     js = JS + SITE_JS + LEAGUE_JS
     return f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">

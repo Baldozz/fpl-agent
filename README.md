@@ -63,8 +63,9 @@ Everything lives on a **single tabbed page** at
 **https://baldozz.github.io/fpl-agent/**:
 
 - **📋 Dashboard** — previous-GW **tracker** (points, rank, captain, bench, chips)
-  + **upcoming-GW recommendation**: captain, **transfer plan** (out→in with point
-  gain), flagged players, and opportunities you don't own.
+  + **upcoming-GW recommendation**: captain, **transfer plan**, formation/chip
+  strategy, expert watch and team news, then the **top 5 transfer options** and a
+  **wildcard draft** over a 5-GW look-ahead, with Varsical ownership context.
 - **⚽ My Team** — your actual team with **live GW scores** in the FPL layout
   (kit shirts on the pitch) and a **gameweek dropdown** to switch weeks.
 - **🏆 Varsical** — league standings (id `1739086`) with every rival's captain,
