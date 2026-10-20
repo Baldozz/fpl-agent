@@ -1,7 +1,7 @@
 {
  "team_id": 8799067,
  "current_gw": 7,
- "fetched_at": "2026-10-20T22:49:12+00:00",
+ "fetched_at": "2026-10-20T23:19:26+00:00",
  "picks": [
   {
    "element": 1,
@@ -57,7 +57,7 @@
   },
   {
    "element": 212,
-   "selling_price": 44
+   "selling_price": 43
   },
   {
    "element": 173,
@@ -70,7 +70,7 @@
   "limit": 1,
   "made": 1,
   "bank": 11,
-  "value": 984
+  "value": 983
  },
  "chips": [
   {
