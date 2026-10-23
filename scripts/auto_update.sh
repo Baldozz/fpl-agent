@@ -42,10 +42,10 @@ fi
 if curl -s -o /dev/null --max-time 3 http://localhost:8765/; then
   log "rebuilding via local server"
   curl -s -X POST --max-time 600 http://localhost:8765/refresh \
-    | "$PY" -c "import sys,json;j=json.load(sys.stdin);print('ok' if j['ok'] else 'FAILED');print('\n'.join(l for l in j['log'].splitlines() if l.startswith(('[my-team','Unified'))))"
+    | "$PY" -c "import sys,json;j=json.load(sys.stdin);print('ok' if j['ok'] else 'FAILED');print('\n'.join(l for l in j['log'].splitlines() if l.startswith(('[my-team','[grok','Unified'))))"
 else
   log "rebuilding directly"
-  "$PY" -m fpl_agent --site --html 2>&1 | grep -E '^\[my-team|^Unified' || true
+  "$PY" -m fpl_agent --site --html 2>&1 | grep -E '^\[(my-team|grok)|^Unified' || true
 fi
 
 [ "$PUSH" = yes ] || exit 0

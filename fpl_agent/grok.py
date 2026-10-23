@@ -71,7 +71,29 @@ def _call(prompt: str, use_tools: bool = True, max_tokens: int = 4000) -> str:
     if r.status_code != 200:
         raise GrokUnavailable(f"HTTP {r.status_code}: {r.text[:200]}")
     data = r.json()
+    _log_cost(data.get("usage") or {})
     return _extract_message(data)
+
+
+_COST_LOG = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                         "data", "grok_costs.jsonl")
+
+
+def _log_cost(usage: dict) -> None:
+    """Print + append each call's bill (xAI reports it in 1e-10 USD ticks)."""
+    import time
+    usd = (usage.get("cost_in_usd_ticks") or 0) / 1e10
+    print(f"[grok] call cost ${usd:.3f} ({usage.get('input_tokens', 0)} in / "
+          f"{usage.get('output_tokens', 0)} out tokens, "
+          f"{usage.get('num_server_side_tools_used', 0)} searches)")
+    try:
+        with open(_COST_LOG, "a") as f:
+            f.write(json.dumps({"t": time.strftime("%Y-%m-%d %H:%M"),
+                                "usd": round(usd, 4), **{k: usage.get(k) for k in (
+                                    "input_tokens", "output_tokens",
+                                    "num_server_side_tools_used")}}) + "\n")
+    except OSError:
+        pass
 
 
 def _extract_message(data: dict) -> str:
@@ -118,11 +140,15 @@ def _parse_prob(v) -> float | None:
 # Grok calls are slow (~15-20s) and cost xAI credits, so reuse a recent answer.
 # Independent of --no-cache (that flag is about FPL data freshness). Team news
 # mostly breaks in the last day (press conferences, late knocks), so refresh
-# hourly then and only every few hours before — the site rebuilds every 30 min,
-# and a 30-min TTL meant a paid X search on nearly every build.
-CACHE_TTL = 60 * 60                  # within NEAR_DEADLINE of the deadline
-CACHE_TTL_FAR = 6 * 60 * 60          # further out
+# most often then and rarely before — the site rebuilds every 30 min, and each
+# call is a paid agentic X/web search. The old 6 h / 1 h tiers came to ~48
+# calls per gameweek; these come to ~18.
+CACHE_TTL = 2 * 60 * 60              # within NEAR_DEADLINE of the deadline
+CACHE_TTL_MID = 8 * 60 * 60          # within MID_DEADLINE
+CACHE_TTL_FAR = 24 * 60 * 60         # further out
 NEAR_DEADLINE = 24 * 60 * 60
+MID_DEADLINE = 72 * 60 * 60
+QUIET_HOURS = range(0, 7)            # local hours: serve the cache, don't call
 _CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
 
@@ -136,17 +162,21 @@ def cache_ttl(deadline: str | None) -> int:
     except ValueError:
         return CACHE_TTL
     left = (dl - datetime.now(timezone.utc)).total_seconds()
-    return CACHE_TTL if left <= NEAR_DEADLINE else CACHE_TTL_FAR
+    if left <= NEAR_DEADLINE:
+        return CACHE_TTL
+    return CACHE_TTL_MID if left <= MID_DEADLINE else CACHE_TTL_FAR
 
 
 def analyse(team_names: list[str], gw: int,
             deadline: str | None = None) -> tuple[dict[str, dict], list[dict]]:
     """Cached wrapper around ``_analyse`` (keyed by gameweek; fresh for
-    ``cache_ttl(deadline)``: 6 h far from the deadline, 1 h in the last day)."""
+    ``cache_ttl(deadline)``: 24 h >3 days out, 8 h within 3 days, 2 h in the
+    last day; overnight any cached answer is served regardless of age)."""
     import time
     path = os.path.join(_CACHE_DIR, f"grok_gw{gw}.json")
     try:
-        if time.time() - os.path.getmtime(path) < cache_ttl(deadline):
+        age = time.time() - os.path.getmtime(path)
+        if age < cache_ttl(deadline) or time.localtime().tm_hour in QUIET_HOURS:
             with open(path) as f:
                 sig, heads = json.load(f)
             print(f"[grok] {len(sig)} start-prob signals, {len(heads)} headlines "
