@@ -1,7 +1,7 @@
 {
  "team_id": 8799067,
  "current_gw": 8,
- "fetched_at": "2026-10-28T10:29:22+00:00",
+ "fetched_at": "2026-10-28T10:59:34+00:00",
  "picks": [
   {
    "element": 1,
@@ -32,8 +32,8 @@
    "selling_price": 67
   },
   {
-   "element": 124,
-   "selling_price": 61
+   "element": 542,
+   "selling_price": 57
   },
   {
    "element": 138,
@@ -60,8 +60,8 @@
    "selling_price": 39
   },
   {
-   "element": 542,
-   "selling_price": 57
+   "element": 124,
+   "selling_price": 61
   }
  ],
  "transfers": {
