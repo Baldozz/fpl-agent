@@ -1,140 +1,140 @@
 {
  "gw": 10,
- "fetched": 1793903938.259024,
+ "fetched": 1793918449.69558,
  "signals": {
-  "Saka": {
-   "start_prob": 0.0,
-   "reason": "thigh out mid-Dec",
-   "source": "grok/x"
-  },
-  "Saliba": {
-   "start_prob": 0.0,
-   "reason": "back injury late Nov",
-   "source": "grok/x"
-  },
-  "Madueke": {
-   "start_prob": 0.5,
-   "reason": "ankle doubt",
-   "source": "grok/x"
-  },
-  "Calafiori": {
-   "start_prob": 0.5,
-   "reason": "knock doubt",
-   "source": "grok/x"
-  },
   "Grealish": {
    "start_prob": 0.0,
-   "reason": "out again",
-   "source": "grok/x"
-  },
-  "Calvert-Lewin": {
-   "start_prob": 0.5,
-   "reason": "doubt",
+   "reason": "OUT vs Coventry (disciplinary)",
    "source": "grok/x"
   },
   "Branthwaite": {
    "start_prob": 0.8,
-   "reason": "fine, fitness work",
+   "reason": "doubt cramp, now fine working fitness",
    "source": "grok/x"
   },
-  "Szoboszlai": {
-   "start_prob": 0.3,
-   "reason": "hamstring doubt",
-   "source": "grok/x"
-  },
-  "Munoz": {
-   "start_prob": 0.3,
-   "reason": "knee doubt",
-   "source": "grok/x"
-  },
-  "Frimpong": {
-   "start_prob": 0.0,
-   "reason": "thigh out",
-   "source": "grok/x"
-  },
-  "Bradley": {
-   "start_prob": 0.0,
-   "reason": "knee out",
-   "source": "grok/x"
-  },
-  "Ekitike": {
-   "start_prob": 0.0,
-   "reason": "Achilles out",
-   "source": "grok/x"
-  },
-  "Leoni": {
-   "start_prob": 0.0,
-   "reason": "knee out",
-   "source": "grok/x"
-  },
-  "Joelinton": {
-   "start_prob": 0.0,
-   "reason": "knock miss time",
-   "source": "grok/x"
-  },
-  "Miley": {
-   "start_prob": 1.0,
-   "reason": "back, expected available",
-   "source": "grok/x"
-  },
-  "Jo\u00e3o Pedro": {
-   "start_prob": 0.0,
-   "reason": "thigh several weeks",
-   "source": "grok/x"
-  },
-  "Konsa": {
+  "Calvert-Lewin": {
    "start_prob": 0.5,
-   "reason": "minor doubt post-withdrawal",
+   "reason": "missed training, major doubt vs Spurs",
    "source": "grok/x"
   },
-  "Dominguez": {
-   "start_prob": 0.0,
-   "reason": "8 weeks muscular",
+  "Okafor": {
+   "start_prob": 0.3,
+   "reason": "groin doubt vs Spurs",
+   "source": "grok/x"
+  },
+  "Stach": {
+   "start_prob": 0.3,
+   "reason": "foot issue doubt vs Spurs",
    "source": "grok/x"
   },
   "Rodon": {
    "start_prob": 0.8,
-   "reason": "could make bench",
+   "reason": "back full training, bench possible",
    "source": "grok/x"
   },
-  "Igor Jesus": {
+  "Crooks": {
+   "start_prob": 0.0,
+   "reason": "suspended 5th booking vs Arsenal",
+   "source": "grok/x"
+  },
+  "Butland": {
+   "start_prob": 0.8,
+   "reason": "back training for Hull",
+   "source": "grok/x"
+  },
+  "Joelinton": {
+   "start_prob": 0.0,
+   "reason": "OUT limped off vs Everton",
+   "source": "grok/x"
+  },
+  "Livramento": {
+   "start_prob": 0.0,
+   "reason": "OUT vs Fulham",
+   "source": "grok/x"
+  },
+  "Ramsey": {
+   "start_prob": 0.0,
+   "reason": "suspended vs Fulham",
+   "source": "grok/x"
+  },
+  "Fernandez-Pardo": {
    "start_prob": 0.5,
-   "reason": "calf 75% chance",
+   "reason": "doubt illness, assessing return",
+   "source": "grok/x"
+  },
+  "Miley": {
+   "start_prob": 0.8,
+   "reason": "making progress, likely back",
+   "source": "grok/x"
+  },
+  "Jesus": {
+   "start_prob": 0.7,
+   "reason": "trained, potentially involved vs City",
+   "source": "grok/x"
+  },
+  "Mu\u00f1oz": {
+   "start_prob": 0.6,
+   "reason": "foot trained, possible vs City",
+   "source": "grok/x"
+  },
+  "Ndoye": {
+   "start_prob": 0.5,
+   "reason": "illness missed day, doubt vs City",
+   "source": "grok/x"
+  },
+  "Dominguez": {
+   "start_prob": 0.0,
+   "reason": "OUT setback ~8 weeks",
+   "source": "grok/x"
+  },
+  "Savona": {
+   "start_prob": 0.7,
+   "reason": "trained minutes in friendly",
+   "source": "grok/x"
+  },
+  "Milambo": {
+   "start_prob": 0.3,
+   "reason": "not ready first team vs Brighton",
+   "source": "grok/x"
+  },
+  "Dasilva": {
+   "start_prob": 0.4,
+   "reason": "30 mins B team, still time away",
    "source": "grok/x"
   }
  },
  "headlines": [
   {
-   "title": "GW10 team news live",
-   "detail": "Calvert-Lewin doubt; Grealish, Branthwaite, Munoz updates"
+   "title": "Grealish ruled OUT for Everton vs Coventry",
+   "detail": "Disciplinary, won't feature Friday."
   },
   {
-   "title": "Arsenal injuries",
-   "detail": "Saka out mid-Dec, Saliba late Nov, Madueke/Calafiori doubts"
+   "title": "Branthwaite expected to start after cramp",
+   "detail": "Working on fitness, high chance vs Coventry."
   },
   {
-   "title": "Liverpool absentees",
-   "detail": "Szoboszlai/Munoz doubtful; Frimpong/Bradley/Ekitike/Leoni out"
+   "title": "Leeds injury doubts mount vs Spurs",
+   "detail": "Calvert-Lewin, Okafor, Stach all doubts."
   },
   {
-   "title": "Newcastle update",
-   "detail": "Joelinton miss time; Miley expected back"
+   "title": "Newcastle hit by multiple absences",
+   "detail": "Joelinton, Livramento OUT; Ramsey suspended."
   },
   {
-   "title": "Brighton blow",
-   "detail": "Jo\u00e3o Pedro ruled out thigh several weeks"
+   "title": "Nott'm Forest boost for Jesus & Mu\u00f1oz",
+   "detail": "Both trained ahead of Man City clash."
   },
   {
-   "title": "Villa/Konsa",
-   "detail": "Konsa minor doubt after midweek withdrawal"
+   "title": "Brentford returnees not ready",
+   "detail": "Milambo, Dasilva still building fitness."
   },
   {
-   "title": "Forest",
-   "detail": "Dominguez out 8 weeks; Igor Jesus 75%"
+   "title": "Hull suspensions and returns",
+   "detail": "Crooks out; Butland back in squad vs Arsenal."
   },
   {
-   "title": "Leeds",
-   "detail": "Rodon could make bench vs Everton"
+   "title": "Rodon nearing Leeds comeback",
+   "detail": "Full training, could feature on bench vs Spurs."
   }
  ]
 }
