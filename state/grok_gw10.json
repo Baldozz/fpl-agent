@@ -1,0 +1,180 @@
+{
+ "gw": 10,
+ "fetched": 1793889428.9874969,
+ "signals": {
+  "Saka": {
+   "start_prob": 0.0,
+   "reason": "Thigh/quad injury, unknown return",
+   "source": "grok/x"
+  },
+  "Dowman": {
+   "start_prob": 0.0,
+   "reason": "Suspended until 29 Nov",
+   "source": "grok/x"
+  },
+  "Cash": {
+   "start_prob": 0.0,
+   "reason": "Suspended until 21 Nov",
+   "source": "grok/x"
+  },
+  "Jo\u00e3o Pedro": {
+   "start_prob": 0.0,
+   "reason": "Thigh injury, unknown return",
+   "source": "grok/x"
+  },
+  "Lacroix": {
+   "start_prob": 0.0,
+   "reason": "Hamstring injury, unknown return",
+   "source": "grok/x"
+  },
+  "Wan-Bissaka": {
+   "start_prob": 0.0,
+   "reason": "Hamstring, expected back 21 Nov",
+   "source": "grok/x"
+  },
+  "Ruggeri": {
+   "start_prob": 0.0,
+   "reason": "Hamstring, expected back 2 Jan",
+   "source": "grok/x"
+  },
+  "Onana": {
+   "start_prob": 0.0,
+   "reason": "Knee injury, unknown return",
+   "source": "grok/x"
+  },
+  "Scott": {
+   "start_prob": 0.0,
+   "reason": "Thigh injury, expected back 21 Nov",
+   "source": "grok/x"
+  },
+  "Mateta": {
+   "start_prob": 0.0,
+   "reason": "Suspended until 2 Dec",
+   "source": "grok/x"
+  },
+  "Sarr": {
+   "start_prob": 0.0,
+   "reason": "Groin/hip injury",
+   "source": "grok/x"
+  },
+  "Tomiyasu": {
+   "start_prob": 0.0,
+   "reason": "Calf/shin injury",
+   "source": "grok/x"
+  },
+  "Gravenberch": {
+   "start_prob": 0.75,
+   "reason": "Foot/heel injury doubt",
+   "source": "grok/x"
+  },
+  "Henderson": {
+   "start_prob": 0.75,
+   "reason": "Illness, 75% chance",
+   "source": "grok/x"
+  },
+  "Saliba": {
+   "start_prob": 0.5,
+   "reason": "Lower back injury doubt/training return",
+   "source": "grok/x"
+  },
+  "Calvert-Lewin": {
+   "start_prob": 0.5,
+   "reason": "Foot setback, carefully optimistic",
+   "source": "grok/x"
+  },
+  "Okafor": {
+   "start_prob": 0.3,
+   "reason": "Adductor, major doubt",
+   "source": "grok/x"
+  },
+  "Stach": {
+   "start_prob": 0.3,
+   "reason": "Broken toe/foot, major doubt",
+   "source": "grok/x"
+  },
+  "Shaw": {
+   "start_prob": 0.0,
+   "reason": "Unknown injury",
+   "source": "grok/x"
+  },
+  "Sesko": {
+   "start_prob": 0.0,
+   "reason": "Calf injury",
+   "source": "grok/x"
+  },
+  "Semenyo": {
+   "start_prob": 0.0,
+   "reason": "Knee injury",
+   "source": "grok/x"
+  },
+  "Crooks": {
+   "start_prob": 0.0,
+   "reason": "Suspended",
+   "source": "grok/x"
+  },
+  "Ramsey": {
+   "start_prob": 0.0,
+   "reason": "Suspended",
+   "source": "grok/x"
+  },
+  "Alderete": {
+   "start_prob": 0.0,
+   "reason": "Suspended",
+   "source": "grok/x"
+  },
+  "Frimpong": {
+   "start_prob": 0.0,
+   "reason": "Hamstring injury",
+   "source": "grok/x"
+  },
+  "Bradley": {
+   "start_prob": 0.0,
+   "reason": "Knee injury",
+   "source": "grok/x"
+  },
+  "Ekitike": {
+   "start_prob": 0.0,
+   "reason": "Achilles injury",
+   "source": "grok/x"
+  },
+  "Leoni": {
+   "start_prob": 0.0,
+   "reason": "Knee injury",
+   "source": "grok/x"
+  }
+ },
+ "headlines": [
+  {
+   "title": "Saka ruled out long-term",
+   "detail": "Arsenal star sidelined with thigh injury, unknown return date."
+  },
+  {
+   "title": "Cash suspended for Villa",
+   "detail": "Matty Cash banned until 21 Nov, major defensive miss vs Man Utd."
+  },
+  {
+   "title": "Jo\u00e3o Pedro out for Chelsea",
+   "detail": "Thigh injury sidelines striker indefinitely, 38%+ owned."
+  },
+  {
+   "title": "Gravenberch fitness test",
+   "detail": "Liverpool mid 75% for Palace after heel issue."
+  },
+  {
+   "title": "Leeds striker doubts",
+   "detail": "Calvert-Lewin setback, Okafor and Stach major doubts."
+  },
+  {
+   "title": "Multiple suspensions this GW",
+   "detail": "Dowman, Cash, Mateta, Crooks, Ramsey, Alderete all banned."
+  },
+  {
+   "title": "Chelsea defensive woes",
+   "detail": "Lacroix, James long-term absentees; Henderson illness doubt."
+  },
+  {
+   "title": "Saliba training return",
+   "detail": "Arsenal defender back in sessions but still flagged doubtful."
+  }
+ ]
+}
