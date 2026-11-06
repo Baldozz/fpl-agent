@@ -1,140 +1,40 @@
 {
  "gw": 10,
- "fetched": 1793945057.261939,
+ "fetched": 1793960404.8784509,
  "signals": {
-  "Grealish": {
+  "Cairney": {
    "start_prob": 0.0,
-   "reason": "OUT vs Coventry (press conf)",
+   "reason": "knee issues post-surgery, not risked vs Newcastle",
    "source": "grok/x"
   },
-  "Branthwaite": {
-   "start_prob": 0.75,
-   "reason": "cramp, late check Everton",
-   "source": "grok/x"
-  },
-  "Calvert-Lewin": {
-   "start_prob": 0.75,
-   "reason": "missed training, 75% Leeds",
-   "source": "grok/x"
-  },
-  "Okafor": {
-   "start_prob": 0.3,
-   "reason": "major groin doubt Leeds",
-   "source": "grok/x"
-  },
-  "Stach": {
-   "start_prob": 0.3,
-   "reason": "foot issue major doubt Leeds",
-   "source": "grok/x"
-  },
-  "Rodon": {
-   "start_prob": 1.0,
-   "reason": "back full training Leeds",
-   "source": "grok/x"
-  },
-  "Joelinton": {
+  "Rice": {
    "start_prob": 0.0,
-   "reason": "limp off, out Newcastle",
-   "source": "grok/x"
-  },
-  "Livramento": {
-   "start_prob": 0.0,
-   "reason": "OUT Newcastle",
-   "source": "grok/x"
-  },
-  "Jesus": {
-   "start_prob": 0.75,
-   "reason": "calf trained, 75% Nott'm Forest",
-   "source": "grok/x"
-  },
-  "Mu\u00f1oz": {
-   "start_prob": 0.75,
-   "reason": "foot trained, 75% Nott'm Forest",
-   "source": "grok/x"
-  },
-  "Dominguez": {
-   "start_prob": 0.0,
-   "reason": "muscular setback ~8 weeks NFO",
-   "source": "grok/x"
-  },
-  "Dasilva": {
-   "start_prob": 0.5,
-   "reason": "back training but limited Brentford",
-   "source": "grok/x"
-  },
-  "Milambo": {
-   "start_prob": 0.5,
-   "reason": "back training Brentford",
+   "reason": "international break injury, out for Newcastle game",
    "source": "grok/x"
   },
   "Konsa": {
    "start_prob": 0.75,
-   "reason": "new knee doubt",
+   "reason": "knee injury, 75% chance per FPL alert",
    "source": "grok/x"
   },
-  "Ndoye": {
-   "start_prob": 0.5,
-   "reason": "illness doubt Nott'm Forest",
-   "source": "grok/x"
-  },
-  "Miley": {
-   "start_prob": 0.8,
-   "reason": "progress, likely back Newcastle",
-   "source": "grok/x"
-  },
-  "Fernandez-Pardo": {
-   "start_prob": 0.5,
-   "reason": "assessed after illness Newcastle",
-   "source": "grok/x"
-  },
-  "Ramsey": {
-   "start_prob": 0.0,
-   "reason": "suspended Newcastle",
-   "source": "grok/x"
-  },
-  "Crooks": {
-   "start_prob": 0.0,
-   "reason": "suspended Hull",
-   "source": "grok/x"
-  },
-  "Targett": {
-   "start_prob": 0.0,
-   "reason": "OUT Hull",
+  "Sessegnon": {
+   "start_prob": 1.0,
+   "reason": "available after ban completion",
    "source": "grok/x"
   }
  },
  "headlines": [
   {
-   "title": "Grealish ruled out GW10",
-   "detail": "Won't feature vs Coventry Friday"
+   "title": "Fulham team news vs Newcastle",
+   "detail": "Cairney out with knee; Sessegnon back, rest fit"
   },
   {
-   "title": "Branthwaite 75% for Everton",
-   "detail": "Cramp late fitness test"
+   "title": "England squad update",
+   "detail": "Palmer omitted; Rice injured for post-break return"
   },
   {
-   "title": "DCL 75% chance vs Spurs",
-   "detail": "Missed Thursday training"
-  },
-  {
-   "title": "Joelinton out for Newcastle",
-   "detail": "Knock rules him out vs Fulham"
-  },
-  {
-   "title": "Jesus & Mu\u00f1oz close for NFO",
-   "detail": "Both trained, 75% vs Man City"
-  },
-  {
-   "title": "Rodon back in Leeds squad",
-   "detail": "Full training, nailed option"
-  },
-  {
-   "title": "Dominguez out 8 weeks",
-   "detail": "Muscular setback at Nott'm Forest"
-  },
-  {
-   "title": "Stach & Okafor major doubts",
-   "detail": "Leeds injuries for GW10"
+   "title": "Konsa fitness alert",
+   "detail": "Villa defender 75% to play GW10 despite knee"
   }
  ]
 }
