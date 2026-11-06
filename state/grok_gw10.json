@@ -1,40 +1,195 @@
 {
  "gw": 10,
- "fetched": 1793960404.8784509,
+ "fetched": 1793975022.01425,
  "signals": {
-  "Cairney": {
+  "Grealish": {
    "start_prob": 0.0,
-   "reason": "knee issues post-surgery, not risked vs Newcastle",
+   "reason": "won't be available vs Coventry",
    "source": "grok/x"
   },
-  "Rice": {
+  "Branthwaite": {
+   "start_prob": 0.5,
+   "reason": "cramp, to be assessed",
+   "source": "grok/x"
+  },
+  "Calvert-Lewin": {
+   "start_prob": 0.5,
+   "reason": "missed Thursday training, major doubt",
+   "source": "grok/x"
+  },
+  "Joelinton": {
    "start_prob": 0.0,
-   "reason": "international break injury, out for Newcastle game",
+   "reason": "limped off vs Everton, set to miss time",
    "source": "grok/x"
   },
-  "Konsa": {
-   "start_prob": 0.75,
-   "reason": "knee injury, 75% chance per FPL alert",
+  "Jesus": {
+   "start_prob": 0.8,
+   "reason": "trained, potentially involved",
    "source": "grok/x"
   },
-  "Sessegnon": {
+  "Dominguez": {
+   "start_prob": 0.0,
+   "reason": "setback, ~8 weeks",
+   "source": "grok/x"
+  },
+  "Mu\u00f1oz": {
+   "start_prob": 0.5,
+   "reason": "foot, trained but doubtful",
+   "source": "grok/x"
+  },
+  "Ndoye": {
+   "start_prob": 0.5,
+   "reason": "missed a day with illness",
+   "source": "grok/x"
+  },
+  "Stach": {
+   "start_prob": 0.3,
+   "reason": "major doubt, battling foot issue",
+   "source": "grok/x"
+  },
+  "Okafor": {
+   "start_prob": 0.3,
+   "reason": "groin, remains doubt",
+   "source": "grok/x"
+  },
+  "Rodon": {
    "start_prob": 1.0,
-   "reason": "available after ban completion",
+   "reason": "back in full training, could make bench",
+   "source": "grok/x"
+  },
+  "Fernandez-Pardo": {
+   "start_prob": 0.5,
+   "reason": "to be assessed after return to training",
+   "source": "grok/x"
+  },
+  "Miley": {
+   "start_prob": 0.8,
+   "reason": "making progress, expected available",
+   "source": "grok/x"
+  },
+  "Milambo": {
+   "start_prob": 0.3,
+   "reason": "back in training but not ready for first team",
+   "source": "grok/x"
+  },
+  "Dasilva": {
+   "start_prob": 0.3,
+   "reason": "30 mins B team, still time from first team",
+   "source": "grok/x"
+  },
+  "Crooks": {
+   "start_prob": 0.0,
+   "reason": "suspended (fifth booking)",
+   "source": "grok/x"
+  },
+  "Butland": {
+   "start_prob": 1.0,
+   "reason": "back in training",
+   "source": "grok/x"
+  },
+  "Kadioglu": {
+   "start_prob": 0.0,
+   "reason": "out Thursday, doubt Sunday",
+   "source": "grok/x"
+  },
+  "Thomas": {
+   "start_prob": 0.5,
+   "reason": "in question vs Everton",
+   "source": "grok/x"
+  },
+  "Juanlu": {
+   "start_prob": 0.0,
+   "reason": "ankle injury with U21s",
+   "source": "grok/x"
+  },
+  "Baleba": {
+   "start_prob": 0.0,
+   "reason": "out with hamstring",
+   "source": "grok/x"
+  },
+  "Martinez": {
+   "start_prob": 1.0,
+   "reason": "back in training",
+   "source": "grok/x"
+  },
+  "Szoboszlai": {
+   "start_prob": 0.8,
+   "reason": "32 mins off bench post-injury",
+   "source": "grok/x"
+  },
+  "Mainoo": {
+   "start_prob": 0.8,
+   "reason": "32 mins off bench post-injury",
+   "source": "grok/x"
+  },
+  "Maddison": {
+   "start_prob": 0.0,
+   "reason": "no mins post-injury",
+   "source": "grok/x"
+  },
+  "Henderson": {
+   "start_prob": 0.3,
+   "reason": "illness, likely back soon",
+   "source": "grok/x"
+  },
+  "Diallo": {
+   "start_prob": 0.5,
+   "reason": "cramp, training Monday",
+   "source": "grok/x"
+  },
+  "Livramento": {
+   "start_prob": 0.0,
+   "reason": "out",
+   "source": "grok/x"
+  },
+  "Ramsey": {
+   "start_prob": 0.0,
+   "reason": "suspended",
+   "source": "grok/x"
+  },
+  "Savona": {
+   "start_prob": 0.8,
+   "reason": "trained, minutes in friendly",
+   "source": "grok/x"
+  },
+  "Diarra": {
+   "start_prob": 0.0,
+   "reason": "out 6 weeks",
    "source": "grok/x"
   }
  },
  "headlines": [
   {
-   "title": "Fulham team news vs Newcastle",
-   "detail": "Cairney out with knee; Sessegnon back, rest fit"
+   "title": "Grealish ruled out for Everton",
+   "detail": "Won't be available vs Coventry; Branthwaite to be assessed."
   },
   {
-   "title": "England squad update",
-   "detail": "Palmer omitted; Rice injured for post-break return"
+   "title": "Joelinton out for Newcastle",
+   "detail": "Limped off vs Everton, set to miss time."
   },
   {
-   "title": "Konsa fitness alert",
-   "detail": "Villa defender 75% to play GW10 despite knee"
+   "title": "Dominguez out 8 weeks at Forest",
+   "detail": "Muscular setback; Jesus trained and potentially involved."
+  },
+  {
+   "title": "Calvert-Lewin major doubt",
+   "detail": "Missed Thursday training; Okafor and Stach also doubts."
+  },
+  {
+   "title": "Rodon back for Leeds",
+   "detail": "Full training, could make bench vs Spurs."
+  },
+  {
+   "title": "Miley making progress at Newcastle",
+   "detail": "Expected available; Fernandez-Pardo to be assessed."
+  },
+  {
+   "title": "Multiple doubts at Brentford",
+   "detail": "Milambo and Dasilva still not first-team ready."
+  },
+  {
+   "title": "Martinez back in training",
+   "detail": "Villa keeper available; Kadioglu out Thursday."
   }
  ]
 }
