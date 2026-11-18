@@ -1,0 +1,45 @@
+{
+ "gw": 11,
+ "fetched": 1795008222.6848571,
+ "signals": {
+  "Van Dijk": {
+   "start_prob": 0.7,
+   "reason": "Withdrew from int duty, assessed vs Man Utd (LivEcho)",
+   "source": "grok/x"
+  },
+  "Gravenberch": {
+   "start_prob": 0.5,
+   "reason": "Heel injury, missed int break, assessed pre-Man Utd (LivEcho)",
+   "source": "grok/x"
+  },
+  "Bradley": {
+   "start_prob": 0.3,
+   "reason": "Injury latest, return date pending (LivEcho)",
+   "source": "grok/x"
+  },
+  "Odegaard": {
+   "start_prob": 1.0,
+   "reason": "Fully fit post-int break, no Arsenal injuries (fan reports)",
+   "source": "grok/x"
+  },
+  "Buendia": {
+   "start_prob": 0.2,
+   "reason": "Injury prone, frequent doubts at Villa (fan X posts)",
+   "source": "grok/x"
+  }
+ },
+ "headlines": [
+  {
+   "title": "Liverpool injury concerns post-int break",
+   "detail": "Van Dijk managed rest, Gravenberch heel doubt for Man Utd; Szoboszlai & Koumas fit."
+  },
+  {
+   "title": "Arsenal return unscathed",
+   "detail": "No new injuries; Odegaard and squad fully fit for Newcastle clash."
+  },
+  {
+   "title": "Post-int break rotation risks",
+   "detail": "Several PL clubs monitoring fitness after int duty, esp. Liverpool & Man Utd fixtures."
+  }
+ ]
+}
