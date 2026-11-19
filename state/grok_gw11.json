@@ -1,45 +1,44 @@
 {
  "gw": 11,
- "fetched": 1795008222.6848571,
+ "fetched": 1795069567.2840571,
  "signals": {
-  "Van Dijk": {
-   "start_prob": 0.7,
-   "reason": "Withdrew from int duty, assessed vs Man Utd (LivEcho)",
-   "source": "grok/x"
-  },
-  "Gravenberch": {
-   "start_prob": 0.5,
-   "reason": "Heel injury, missed int break, assessed pre-Man Utd (LivEcho)",
-   "source": "grok/x"
-  },
   "Bradley": {
-   "start_prob": 0.3,
-   "reason": "Injury latest, return date pending (LivEcho)",
-   "source": "grok/x"
-  },
-  "Odegaard": {
-   "start_prob": 1.0,
-   "reason": "Fully fit post-int break, no Arsenal injuries (fan reports)",
-   "source": "grok/x"
-  },
-  "Buendia": {
    "start_prob": 0.2,
-   "reason": "Injury prone, frequent doubts at Villa (fan X posts)",
+   "reason": "Returned to Liverpool training post-knee injury, still months from match fitness",
+   "source": "grok/x"
+  },
+  "Rashford": {
+   "start_prob": 0.5,
+   "reason": "MUFC closer to return under new boss Poch but limited, rotation risk vs Liverpool",
+   "source": "grok/x"
+  },
+  "Shaw": {
+   "start_prob": 0.4,
+   "reason": "MUFC working back from injury, not guaranteed under Pochettino ahead of Anfield",
+   "source": "grok/x"
+  },
+  "Havertz": {
+   "start_prob": 0.9,
+   "reason": "Arsenal nailed starter, recent KMI panel highlights his denied penalty vs Hull",
    "source": "grok/x"
   }
  },
  "headlines": [
   {
-   "title": "Liverpool injury concerns post-int break",
-   "detail": "Van Dijk managed rest, Gravenberch heel doubt for Man Utd; Szoboszlai & Koumas fit."
+   "title": "Pochettino's first Man Utd training",
+   "detail": "Near-full squad incl. returning internationals (Bruno, Amad etc) at Carrington Thu; Rashford/Shaw progressing but limited."
   },
   {
-   "title": "Arsenal return unscathed",
-   "detail": "No new injuries; Odegaard and squad fully fit for Newcastle clash."
+   "title": "Conor Bradley back in Liverpool training",
+   "detail": "Major step in recovery from Jan knee injury; still long way to first-team return."
   },
   {
-   "title": "Post-int break rotation risks",
-   "detail": "Several PL clubs monitoring fitness after int duty, esp. Liverpool & Man Utd fixtures."
+   "title": "Arsenal receive further refereeing boost",
+   "detail": "KMI panel rules 3 incorrect decisions against them this season, latest Havertz penalty vs Hull."
+  },
+  {
+   "title": "Chelsea face must-win vs Leeds",
+   "detail": "Pressure mounts on Xabi Alonso; drop more points vs promoted side would hit top-4 hopes hard."
   }
  ]
 }
