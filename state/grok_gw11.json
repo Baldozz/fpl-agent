@@ -1,90 +1,130 @@
 {
  "gw": 11,
- "fetched": 1795185154.865385,
+ "fetched": 1795201331.490974,
  "signals": {
-  "Saka": {
-   "start_prob": 0.3,
-   "reason": "Health concerns, potential to miss multiple games (The Sun via X)",
+  "Salah": {
+   "start_prob": 1.0,
+   "reason": "Nailed-on post-int'l break, no reported issues (X beat reporters)",
    "source": "grok/x"
   },
-  "Romero": {
-   "start_prob": 0.5,
-   "reason": "Injury prone, recent limited training (fan/ITK discussion on X)",
+  "Haaland": {
+   "start_prob": 1.0,
+   "reason": "Fully fit & expected to start vs Fulham (latest City team news)",
+   "source": "grok/x"
+  },
+  "Saka": {
+   "start_prob": 0.9,
+   "reason": "Likely starter despite rotation risk post-break (Arsenal updates)",
+   "source": "grok/x"
+  },
+  "Palmer": {
+   "start_prob": 1.0,
+   "reason": "Nailed-on for Chelsea, no doubts reported",
+   "source": "grok/x"
+  },
+  "Son": {
+   "start_prob": 0.8,
+   "reason": "Likely back & starting for Spurs after fitness boost",
    "source": "grok/x"
   },
   "Maddison": {
    "start_prob": 0.8,
-   "reason": "Working well daily after limited sessions, nearing return (De Zerbi via LastWordOnSpurs)",
+   "reason": "Returns from injury for Spurs vs Ipswich (De Zerbi boost)",
    "source": "grok/x"
   },
-  "Manzambi": {
+  "Udogie": {
    "start_prob": 0.7,
-   "reason": "Fit after international withdrawal, available vs Sunderland (Emery via BurleJunior)",
+   "reason": "Training concern; risk of missing if not worked (De Zerbi warning)",
    "source": "grok/x"
   },
-  "Donnarumma": {
+  "Jo\u00e3o Pedro": {
+   "start_prob": 0.0,
+   "reason": "Still out injured for Chelsea (training pics & Alonso confirm)",
+   "source": "grok/x"
+  },
+  "Ismaila Sarr": {
+   "start_prob": 0.0,
+   "reason": "Groin injury, remains sidelined (BBC via X)",
+   "source": "grok/x"
+  },
+  "Bergvall": {
+   "start_prob": 0.7,
+   "reason": "Injury return possible for Spurs this weekend",
+   "source": "grok/x"
+  },
+  "Caciedo": {
    "start_prob": 1.0,
-   "reason": "Confirmed to start vs Fulham despite int'l errors (Maresca via X)",
+   "reason": "Fit & available for Chelsea vs Leeds",
    "source": "grok/x"
   },
-  "Lacroix": {
-   "start_prob": 0.0,
-   "reason": "Hamstring injury, confirmed out vs Leeds (Alonso via X)",
+  "Thomas": {
+   "start_prob": 0.5,
+   "reason": "Doubtful for Brentford, low recent form",
    "source": "grok/x"
   },
-  "Hato": {
-   "start_prob": 0.0,
-   "reason": "Back injury, sidelined for a while (Alonso via X)",
+  "Schade": {
+   "start_prob": 0.5,
+   "reason": "Rotation/poor form risk for Brentford (FPL AI notes)",
    "source": "grok/x"
   },
-  "Joao Pedro": {
+  "Noni Madueke": {
+   "start_prob": 0.6,
+   "reason": "Injury risk could force Arsenal youngster start (X speculation)",
+   "source": "grok/x"
+  },
+  "Dowman": {
+   "start_prob": 0.3,
+   "reason": "16yo rotation/new starter risk if Arsenal injuries",
+   "source": "grok/x"
+  },
+  "Est\u00eav\u00e3o": {
+   "start_prob": 0.6,
+   "reason": "Potential regular starter push for Chelsea",
+   "source": "grok/x"
+  },
+  "Odobert": {
    "start_prob": 0.4,
-   "reason": "Injury latest discussed, Chelsea coping without (Alonso press via BobbyVincentFL)",
+   "reason": "Return soon but likely not immediate for Spurs",
    "source": "grok/x"
   },
-  "Enzo Fernandez": {
-   "start_prob": 0.8,
-   "reason": "Expected in lineup vs Fulham despite debate (Maresca comments via X)",
-   "source": "grok/x"
-  },
-  "Semenyo": {
-   "start_prob": 1.0,
-   "reason": "Available for clash vs Fulham (ITK via X)",
+  "Simons": {
+   "start_prob": 0.4,
+   "reason": "Return soon but likely not immediate for Spurs",
    "source": "grok/x"
   }
  },
  "headlines": [
   {
-   "title": "Chelsea injury crisis deepens",
-   "detail": "Lacroix (hamstring) and Hato (back) ruled out vs Leeds; Alonso updates on 6+ players."
+   "title": "Spurs triple boost",
+   "detail": "Maddison, Bergvall & Udogie returns possible vs Ipswich (De Zerbi)."
   },
   {
-   "title": "Saka faces potential absence",
-   "detail": "Arsenal star's health update suggests risk of missing key games."
+   "title": "Chelsea training update",
+   "detail": "Jo\u00e3o Pedro remains out; Caciedo fully fit for Leeds clash."
   },
   {
-   "title": "Maddison progressing at Spurs",
-   "detail": "Working well daily; risk of injury if not managed after limited training."
+   "title": "Udogie training warning",
+   "detail": "De Zerbi: No training = injury risk & no play for Spurs."
   },
   {
-   "title": "Donnarumma starts for Chelsea",
-   "detail": "Backed by Maresca despite international mistakes; named MOTM previously."
+   "title": "Sarr groin setback",
+   "detail": "Palace attacker still sidelined, out for near term."
   },
   {
-   "title": "Manzambi fit for Villa",
-   "detail": "Available after int'l withdrawal; could start vs Sunderland per Emery."
+   "title": "Brentford doubts",
+   "detail": "Thomas doubtful, Schade rotation risk amid poor form."
   },
   {
-   "title": "Arteta warns on FPL leaks",
-   "detail": "Squad confidentiality critical after Fantasy team news incidents."
+   "title": "Arsenal youth risk",
+   "detail": "Madueke injury could see 16yo Dowman start."
   },
   {
-   "title": "Romero injury concerns raised",
-   "detail": "Tottenham defender labelled too prone; calls for squad changes."
+   "title": "Predicted PL lineups",
+   "detail": "Newcastle vs Arsenal & Pochettino focus dominate previews."
   },
   {
-   "title": "Joao Pedro update from Alonso",
-   "detail": "Chelsea boss details Brazilian's injury and squad stepping up."
+   "title": "City & Liverpool nailed",
+   "detail": "Haaland, Salah expected to start post-international break."
   }
  ]
 }
