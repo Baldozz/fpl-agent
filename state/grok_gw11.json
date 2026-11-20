@@ -1,67 +1,90 @@
 {
  "gw": 11,
- "fetched": 1795170646.723445,
+ "fetched": 1795185154.865385,
  "signals": {
   "Saka": {
-   "start_prob": 0.0,
-   "reason": "Out 4+ weeks, Arteta confirmed (RAYTREND FOOTBALL)",
-   "source": "grok/x"
-  },
-  "Saliba": {
    "start_prob": 0.3,
-   "reason": "Injury doubt for Newcastle clash (football.london via ArsenalFC_fl)",
+   "reason": "Health concerns, potential to miss multiple games (The Sun via X)",
    "source": "grok/x"
   },
-  "Zubimendi": {
+  "Romero": {
    "start_prob": 0.5,
-   "reason": "Injury latest, return date unclear vs Newcastle (football.london)",
+   "reason": "Injury prone, recent limited training (fan/ITK discussion on X)",
    "source": "grok/x"
   },
-  "Khusanov": {
-   "start_prob": 0.0,
-   "reason": "Not spotted in training, likely out vs Fulham (City ITK post)",
-   "source": "grok/x"
-  },
-  "Palmer": {
+  "Maddison": {
    "start_prob": 0.8,
-   "reason": "Nailed-on starter for Chelsea vs Leeds despite rotation talk",
+   "reason": "Working well daily after limited sessions, nearing return (De Zerbi via LastWordOnSpurs)",
    "source": "grok/x"
   },
-  "Mbeumo": {
-   "start_prob": 0.8,
-   "reason": "Likely starter for Brentford despite tough fixtures (FPL chatter)",
+  "Manzambi": {
+   "start_prob": 0.7,
+   "reason": "Fit after international withdrawal, available vs Sunderland (Emery via BurleJunior)",
    "source": "grok/x"
   },
-  "Tzolis": {
+  "Donnarumma": {
    "start_prob": 1.0,
-   "reason": "Newly nailed-on, self-captained in FPL leak (Arsenal posts)",
+   "reason": "Confirmed to start vs Fulham despite int'l errors (Maresca via X)",
+   "source": "grok/x"
+  },
+  "Lacroix": {
+   "start_prob": 0.0,
+   "reason": "Hamstring injury, confirmed out vs Leeds (Alonso via X)",
+   "source": "grok/x"
+  },
+  "Hato": {
+   "start_prob": 0.0,
+   "reason": "Back injury, sidelined for a while (Alonso via X)",
+   "source": "grok/x"
+  },
+  "Joao Pedro": {
+   "start_prob": 0.4,
+   "reason": "Injury latest discussed, Chelsea coping without (Alonso press via BobbyVincentFL)",
+   "source": "grok/x"
+  },
+  "Enzo Fernandez": {
+   "start_prob": 0.8,
+   "reason": "Expected in lineup vs Fulham despite debate (Maresca comments via X)",
+   "source": "grok/x"
+  },
+  "Semenyo": {
+   "start_prob": 1.0,
+   "reason": "Available for clash vs Fulham (ITK via X)",
    "source": "grok/x"
   }
  },
  "headlines": [
   {
-   "title": "Saka ruled out for 4 weeks",
-   "detail": "Arteta confirms major blow for Arsenal ahead of Newcastle."
+   "title": "Chelsea injury crisis deepens",
+   "detail": "Lacroix (hamstring) and Hato (back) ruled out vs Leeds; Alonso updates on 6+ players."
   },
   {
-   "title": "Pochettino's first Utd game vs Liverpool",
-   "detail": "New Man Utd boss faces baptism of fire at Anfield."
+   "title": "Saka faces potential absence",
+   "detail": "Arsenal star's health update suggests risk of missing key games."
   },
   {
-   "title": "Arteta cracks down on FPL leaks",
-   "detail": "Bans players from selecting teammates after Tzolis incident."
+   "title": "Maddison progressing at Spurs",
+   "detail": "Working well daily; risk of injury if not managed after limited training."
   },
   {
-   "title": "Drone issues plague PL clubs",
-   "detail": "Arteta & Utd training sessions compromised before GW11."
+   "title": "Donnarumma starts for Chelsea",
+   "detail": "Backed by Maresca despite international mistakes; named MOTM previously."
   },
   {
-   "title": "Saliba & Zubimendi doubts",
-   "detail": "Arsenal injury concerns for key Newcastle clash."
+   "title": "Manzambi fit for Villa",
+   "detail": "Available after int'l withdrawal; could start vs Sunderland per Emery."
   },
   {
-   "title": "Khusanov misses City training",
-   "detail": "Likely absentee for Man City vs Fulham."
+   "title": "Arteta warns on FPL leaks",
+   "detail": "Squad confidentiality critical after Fantasy team news incidents."
+  },
+  {
+   "title": "Romero injury concerns raised",
+   "detail": "Tottenham defender labelled too prone; calls for squad changes."
+  },
+  {
+   "title": "Joao Pedro update from Alonso",
+   "detail": "Chelsea boss details Brazilian's injury and squad stepping up."
   }
  ]
 }
