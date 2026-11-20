@@ -87,6 +87,7 @@ def _strategy_and_planned(boot, d, fixtures):
                 "team": p.team_name, "form": f"{p.form:.1f}", "proj": f"{p.projected:.1f}",
                 "opp": o[0], "ha": o[1], "fdr": o[2],
                 "is_captain": p.id == cap_id, "is_vice": p.id == vice_id,
+                "news": p.news, "chance": p.chance,
                 "on_bench": str(p.id) not in start_keys})
         meta = {
             "manager": d.manager,

@@ -368,6 +368,11 @@ PLANNED_CSS = """
 .opp.fdr1,.opp.fdr2{background:#1f9d57}.opp.fdr3{background:#5b6b7b}
 .opp.fdr4{background:#d9772b}.opp.fdr5{background:#c02a4a}
 .benchbar .fp .pmn .frm{color:var(--muted);text-shadow:none}
+.fp .pflag{position:absolute;bottom:0;left:4px;width:18px;height:18px;border-radius:50%;
+  background:#f2a900;color:#2d0a31;font-size:12px;font-weight:800;display:grid;
+  place-items:center;z-index:2;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.doubt{font-size:12px;margin:10px 0 0;padding:8px 10px;border-radius:8px;
+  background:rgba(242,169,0,.14);color:inherit}
 .pt.proj{background:#e9eef7;color:#1c2a3a}
 :root[data-theme="dark"] .pt.proj{background:#1b2735;color:#dbe6f3}
 /* Formation-shape list: each shape + the XI it actually picks */
@@ -385,6 +390,17 @@ PLANNED_CSS = """
 """
 
 
+def _doubt_tip(p: dict) -> str:
+    """Why a player is doubtful (FPL news / chance of playing), or "" if fit."""
+    chance = p.get("chance")
+    if not p.get("news") and (chance is None or chance >= 100):
+        return ""
+    news = p.get("news") or ""
+    if chance is not None and chance < 100 and f"{chance}%" not in news:
+        return " — ".join(x for x in (f"{chance}% chance of playing", news) if x)
+    return news
+
+
 def _planned_card(p: dict) -> str:
     """A pitch card for the upcoming GW: kit, name, projected pts, form + opponent.
 
@@ -393,12 +409,15 @@ def _planned_card(p: dict) -> str:
     """
     band = ('<span class="band">C</span>' if p.get("is_captain") else
             '<span class="band v">V</span>' if p.get("is_vice") else "")
+    flag = ""
+    if _doubt_tip(p):
+        flag = f'<span class="pflag" title="{_esc(_doubt_tip(p))}">!</span>'
     kit = _kit_url(p["code"], p["pos"])
     opp = f'{p["opp"]} ({p["ha"]})' if p.get("opp") else ""
     oppcls = f' fdr{int(p["fdr"])}' if p.get("fdr") else ""
     return f"""
       <div class="fp{' cap' if p.get('is_captain') else ''}">
-        <div class="kitwrap" data-pos="{p['pos']}">{band}<img src="{kit}"
+        <div class="kitwrap" data-pos="{p['pos']}">{band}{flag}<img src="{kit}"
           alt="{_esc(p['team'])}" loading="lazy"
           onerror="this.remove();this.parentNode.classList.add('nokit')"></div>
         <div class="nm">{_esc(p['name'])}</div>
@@ -422,6 +441,13 @@ def render_planned_pitch(players: list[dict], *, gw: int, deadline: str = "",
         return f'<div class="frow">{cards}</div>'
     pitch = f'<div class="fpitch">{"".join(line(pos) for pos,_ in POS_ROWS)}</div>'
     benchbar = f'<div class="benchbar">{"".join(_planned_card(p) for p in bench)}</div>'
+    doubtful = [p for p in players if _doubt_tip(p)]
+    doubt_html = ""
+    if doubtful:
+        items = "; ".join(f'<b>{_esc(p["name"])}</b> ({_esc(_doubt_tip(p))})'
+                          f'{" – bench" if p.get("on_bench") else ""}'
+                          for p in doubtful)
+        doubt_html = f'<p class="doubt">⚠️ Doubtful: {items}</p>'
     statrow = ""
     if stats:
         statrow = ('<section class="stats">'
@@ -442,7 +468,7 @@ def render_planned_pitch(players: list[dict], *, gw: int, deadline: str = "",
         <div class="lbl">XI projected · {_esc(formation)}</div></div>
     </header>
     {statrow}
-    <div class="card"><h3>Your XI · {_esc(formation)}</h3>{pitch}
+    <div class="card"><h3>Your XI · {_esc(formation)}</h3>{pitch}{doubt_html}
       <h3 style="margin-top:14px">Bench</h3>{benchbar}{note_html}</div>"""
     return content
 
