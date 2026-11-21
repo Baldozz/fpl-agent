@@ -1,140 +1,68 @@
 {
  "gw": 11,
- "fetched": 1795241162.593846,
+ "fetched": 1795255823.736892,
  "signals": {
-  "Zubimendi": {
-   "start_prob": 0.0,
-   "reason": "Hamstring injury vs Spain, several weeks out (Arsenal trip to Newcastle)",
-   "source": "grok/x"
-  },
-  "Saliba": {
-   "start_prob": 0.7,
-   "reason": "Available post-international, first league start Arteta's call",
-   "source": "grok/x"
-  },
   "Cash": {
    "start_prob": 0.0,
-   "reason": "Concussion protocols despite ban served (Villa)",
+   "reason": "Concussion, ruled out vs Sunderland",
    "source": "grok/x"
   },
   "Wan-Bissaka": {
-   "start_prob": 0.8,
-   "reason": "Back in contention at RB (Villa)",
-   "source": "grok/x"
-  },
-  "Caicedo": {
    "start_prob": 1.0,
-   "reason": "Fit and available (Chelsea)",
+   "reason": "Returns from 6-game absence for Villa",
    "source": "grok/x"
   },
-  "Joao Pedro": {
+  "Xhaka": {
    "start_prob": 0.0,
-   "reason": "Will miss Leeds game (Chelsea)",
+   "reason": "Injured in Sunderland win over Chelsea",
    "source": "grok/x"
   },
-  "Bergvall": {
-   "start_prob": 0.8,
-   "reason": "Available (Spurs)",
+  "Brobbey": {
+   "start_prob": 0.0,
+   "reason": "Injured in Sunderland win over Chelsea",
    "source": "grok/x"
   },
-  "Maddison": {
-   "start_prob": 0.9,
-   "reason": "Available (Spurs)",
+  "Lacroix": {
+   "start_prob": 0.3,
+   "reason": "Injury recovery, possible before end 2026",
    "source": "grok/x"
   },
-  "Tel": {
-   "start_prob": 0.2,
-   "reason": "2-3 weeks away (Spurs)",
+  "James": {
+   "start_prob": 0.0,
+   "reason": "Long-term injury, behind Lacroix",
    "source": "grok/x"
   },
-  "Minteh": {
-   "start_prob": 0.8,
-   "reason": "Available after Gambia limp (Brighton)",
-   "source": "grok/x"
-  },
-  "Azeez": {
-   "start_prob": 0.6,
-   "reason": "Back training, yet to debut (Brighton)",
+  "Osimhen": {
+   "start_prob": 0.5,
+   "reason": "Transfer links to Man Utd, potential rotation risk",
    "source": "grok/x"
   },
   "Van Dijk": {
    "start_prob": 1.0,
-   "reason": "Expected available (Liverpool)",
-   "source": "grok/x"
-  },
-  "Szoboszlai": {
-   "start_prob": 1.0,
-   "reason": "Fit (Liverpool)",
-   "source": "grok/x"
-  },
-  "Fernandes": {
-   "start_prob": 1.0,
-   "reason": "Confirmed captain under Pochettino (Man Utd)",
-   "source": "grok/x"
-  },
-  "Grealish": {
-   "start_prob": 0.6,
-   "reason": "Brought back into contention (Everton)",
-   "source": "grok/x"
-  },
-  "Guehi": {
-   "start_prob": 0.8,
-   "reason": "Trained (Man City)",
-   "source": "grok/x"
-  },
-  "Nunes": {
-   "start_prob": 0.5,
-   "reason": "Doubt (Man City)",
-   "source": "grok/x"
-  },
-  "Khusanov": {
-   "start_prob": 0.5,
-   "reason": "Doubt (Man City)",
-   "source": "grok/x"
-  },
-  "Smith Rowe": {
-   "start_prob": 0.2,
-   "reason": "Hip pain, expected to miss (Fulham)",
-   "source": "grok/x"
-  },
-  "Cairney": {
-   "start_prob": 0.7,
-   "reason": "Could return (Fulham)",
+   "reason": "Contract uncertainty but nailed starter",
    "source": "grok/x"
   }
  },
  "headlines": [
   {
-   "title": "Zubimendi ruled out for weeks",
-   "detail": "Hamstring confirmed after Spain duty; misses Arsenal vs Newcastle. (post:0)"
+   "title": "Aston Villa: Wan-Bissaka returns, Cash out",
+   "detail": "Aaron Wan-Bissaka back after 6 games; Matty Cash ruled out with concussion for Sunderland clash."
   },
   {
-   "title": "Saliba available but rotation risk",
-   "detail": "Post-comeback, first PL start undecided for Arsenal. (post:1)"
+   "title": "Sunderland hit by double injury",
+   "detail": "Granit Xhaka and Brian Brobbey both injured in win over Chelsea, unavailable for Villa Park."
   },
   {
-   "title": "Cash misses via concussion",
-   "detail": "Despite ban served; Wan-Bissaka back for Villa vs Sunderland. (post:1)"
+   "title": "Chelsea injury updates",
+   "detail": "Maxence Lacroix could return before Reece James; both still recovering under Xabi Alonso."
   },
   {
-   "title": "Joao Pedro absent for Chelsea",
-   "detail": "Misses Leeds; Caicedo fit. (post:1)"
+   "title": "Liverpool: Van Dijk monitored by Juventus",
+   "detail": "Contract talks stalled, potential pre-contract in Jan but remains key starter."
   },
   {
-   "title": "Maddison & Bergvall back for Spurs",
-   "detail": "Tel still 2-3 weeks away vs Ipswich. (post:1)"
-  },
-  {
-   "title": "Minteh & Azeez available for Brighton",
-   "detail": "Post-international; Hull also have returns. (post:1)"
-  },
-  {
-   "title": "Liverpool trio expected fit",
-   "detail": "Van Dijk, Frimpong, Gravenberch + Szoboszlai vs Man Utd. (post:1)"
-  },
-  {
-   "title": "Grealish back in Everton contention",
-   "detail": "For Brentford clash; Carvalho also chance. (post:1)"
+   "title": "Man Utd eye Osimhen",
+   "detail": "Interest renewed in Galatasaray striker for summer; valuation \u00a380-100m."
   }
  ]
 }
