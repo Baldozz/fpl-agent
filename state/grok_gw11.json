@@ -1,130 +1,140 @@
 {
  "gw": 11,
- "fetched": 1795201331.490974,
+ "fetched": 1795241162.593846,
  "signals": {
-  "Salah": {
-   "start_prob": 1.0,
-   "reason": "Nailed-on post-int'l break, no reported issues (X beat reporters)",
+  "Zubimendi": {
+   "start_prob": 0.0,
+   "reason": "Hamstring injury vs Spain, several weeks out (Arsenal trip to Newcastle)",
    "source": "grok/x"
   },
-  "Haaland": {
-   "start_prob": 1.0,
-   "reason": "Fully fit & expected to start vs Fulham (latest City team news)",
-   "source": "grok/x"
-  },
-  "Saka": {
-   "start_prob": 0.9,
-   "reason": "Likely starter despite rotation risk post-break (Arsenal updates)",
-   "source": "grok/x"
-  },
-  "Palmer": {
-   "start_prob": 1.0,
-   "reason": "Nailed-on for Chelsea, no doubts reported",
-   "source": "grok/x"
-  },
-  "Son": {
-   "start_prob": 0.8,
-   "reason": "Likely back & starting for Spurs after fitness boost",
-   "source": "grok/x"
-  },
-  "Maddison": {
-   "start_prob": 0.8,
-   "reason": "Returns from injury for Spurs vs Ipswich (De Zerbi boost)",
-   "source": "grok/x"
-  },
-  "Udogie": {
+  "Saliba": {
    "start_prob": 0.7,
-   "reason": "Training concern; risk of missing if not worked (De Zerbi warning)",
+   "reason": "Available post-international, first league start Arteta's call",
    "source": "grok/x"
   },
-  "Jo\u00e3o Pedro": {
+  "Cash": {
    "start_prob": 0.0,
-   "reason": "Still out injured for Chelsea (training pics & Alonso confirm)",
+   "reason": "Concussion protocols despite ban served (Villa)",
    "source": "grok/x"
   },
-  "Ismaila Sarr": {
+  "Wan-Bissaka": {
+   "start_prob": 0.8,
+   "reason": "Back in contention at RB (Villa)",
+   "source": "grok/x"
+  },
+  "Caicedo": {
+   "start_prob": 1.0,
+   "reason": "Fit and available (Chelsea)",
+   "source": "grok/x"
+  },
+  "Joao Pedro": {
    "start_prob": 0.0,
-   "reason": "Groin injury, remains sidelined (BBC via X)",
+   "reason": "Will miss Leeds game (Chelsea)",
    "source": "grok/x"
   },
   "Bergvall": {
-   "start_prob": 0.7,
-   "reason": "Injury return possible for Spurs this weekend",
+   "start_prob": 0.8,
+   "reason": "Available (Spurs)",
    "source": "grok/x"
   },
-  "Caciedo": {
+  "Maddison": {
+   "start_prob": 0.9,
+   "reason": "Available (Spurs)",
+   "source": "grok/x"
+  },
+  "Tel": {
+   "start_prob": 0.2,
+   "reason": "2-3 weeks away (Spurs)",
+   "source": "grok/x"
+  },
+  "Minteh": {
+   "start_prob": 0.8,
+   "reason": "Available after Gambia limp (Brighton)",
+   "source": "grok/x"
+  },
+  "Azeez": {
+   "start_prob": 0.6,
+   "reason": "Back training, yet to debut (Brighton)",
+   "source": "grok/x"
+  },
+  "Van Dijk": {
    "start_prob": 1.0,
-   "reason": "Fit & available for Chelsea vs Leeds",
+   "reason": "Expected available (Liverpool)",
    "source": "grok/x"
   },
-  "Thomas": {
-   "start_prob": 0.5,
-   "reason": "Doubtful for Brentford, low recent form",
+  "Szoboszlai": {
+   "start_prob": 1.0,
+   "reason": "Fit (Liverpool)",
    "source": "grok/x"
   },
-  "Schade": {
-   "start_prob": 0.5,
-   "reason": "Rotation/poor form risk for Brentford (FPL AI notes)",
+  "Fernandes": {
+   "start_prob": 1.0,
+   "reason": "Confirmed captain under Pochettino (Man Utd)",
    "source": "grok/x"
   },
-  "Noni Madueke": {
+  "Grealish": {
    "start_prob": 0.6,
-   "reason": "Injury risk could force Arsenal youngster start (X speculation)",
+   "reason": "Brought back into contention (Everton)",
    "source": "grok/x"
   },
-  "Dowman": {
-   "start_prob": 0.3,
-   "reason": "16yo rotation/new starter risk if Arsenal injuries",
+  "Guehi": {
+   "start_prob": 0.8,
+   "reason": "Trained (Man City)",
    "source": "grok/x"
   },
-  "Est\u00eav\u00e3o": {
-   "start_prob": 0.6,
-   "reason": "Potential regular starter push for Chelsea",
+  "Nunes": {
+   "start_prob": 0.5,
+   "reason": "Doubt (Man City)",
    "source": "grok/x"
   },
-  "Odobert": {
-   "start_prob": 0.4,
-   "reason": "Return soon but likely not immediate for Spurs",
+  "Khusanov": {
+   "start_prob": 0.5,
+   "reason": "Doubt (Man City)",
    "source": "grok/x"
   },
-  "Simons": {
-   "start_prob": 0.4,
-   "reason": "Return soon but likely not immediate for Spurs",
+  "Smith Rowe": {
+   "start_prob": 0.2,
+   "reason": "Hip pain, expected to miss (Fulham)",
+   "source": "grok/x"
+  },
+  "Cairney": {
+   "start_prob": 0.7,
+   "reason": "Could return (Fulham)",
    "source": "grok/x"
   }
  },
  "headlines": [
   {
-   "title": "Spurs triple boost",
-   "detail": "Maddison, Bergvall & Udogie returns possible vs Ipswich (De Zerbi)."
+   "title": "Zubimendi ruled out for weeks",
+   "detail": "Hamstring confirmed after Spain duty; misses Arsenal vs Newcastle. (post:0)"
   },
   {
-   "title": "Chelsea training update",
-   "detail": "Jo\u00e3o Pedro remains out; Caciedo fully fit for Leeds clash."
+   "title": "Saliba available but rotation risk",
+   "detail": "Post-comeback, first PL start undecided for Arsenal. (post:1)"
   },
   {
-   "title": "Udogie training warning",
-   "detail": "De Zerbi: No training = injury risk & no play for Spurs."
+   "title": "Cash misses via concussion",
+   "detail": "Despite ban served; Wan-Bissaka back for Villa vs Sunderland. (post:1)"
   },
   {
-   "title": "Sarr groin setback",
-   "detail": "Palace attacker still sidelined, out for near term."
+   "title": "Joao Pedro absent for Chelsea",
+   "detail": "Misses Leeds; Caicedo fit. (post:1)"
   },
   {
-   "title": "Brentford doubts",
-   "detail": "Thomas doubtful, Schade rotation risk amid poor form."
+   "title": "Maddison & Bergvall back for Spurs",
+   "detail": "Tel still 2-3 weeks away vs Ipswich. (post:1)"
   },
   {
-   "title": "Arsenal youth risk",
-   "detail": "Madueke injury could see 16yo Dowman start."
+   "title": "Minteh & Azeez available for Brighton",
+   "detail": "Post-international; Hull also have returns. (post:1)"
   },
   {
-   "title": "Predicted PL lineups",
-   "detail": "Newcastle vs Arsenal & Pochettino focus dominate previews."
+   "title": "Liverpool trio expected fit",
+   "detail": "Van Dijk, Frimpong, Gravenberch + Szoboszlai vs Man Utd. (post:1)"
   },
   {
-   "title": "City & Liverpool nailed",
-   "detail": "Haaland, Salah expected to start post-international break."
+   "title": "Grealish back in Everton contention",
+   "detail": "For Brentford clash; Carvalho also chance. (post:1)"
   }
  ]
 }
