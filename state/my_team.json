@@ -1,7 +1,7 @@
 {
  "team_id": 8799067,
- "current_gw": 10,
- "fetched_at": "2026-11-21T10:10:26+00:00",
+ "current_gw": 11,
+ "fetched_at": "2026-11-21T12:09:21+00:00",
  "picks": [
   {
    "element": 1,
@@ -68,31 +68,31 @@
   "cost": 4,
   "status": "cost",
   "limit": 1,
-  "made": 1,
+  "made": 0,
   "bank": 12,
   "value": 990
  },
  "chips": [
   {
    "name": "bboost",
-   "status_for_entry": "active",
+   "status_for_entry": "played",
    "played_by_entry": [
     11
    ]
   },
   {
    "name": "3xc",
-   "status_for_entry": "unavailable",
+   "status_for_entry": "available",
    "played_by_entry": []
   },
   {
    "name": "wildcard",
-   "status_for_entry": "unavailable",
+   "status_for_entry": "available",
    "played_by_entry": []
   },
   {
    "name": "freehit",
-   "status_for_entry": "unavailable",
+   "status_for_entry": "available",
    "played_by_entry": []
   }
  ]
