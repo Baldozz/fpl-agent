@@ -1,0 +1,67 @@
+{
+ "gw": 12,
+ "fetched": 1795561688.338015,
+ "signals": {
+  "Raya": {
+   "start_prob": 0.0,
+   "reason": "Injury (unknown severity, out next few weeks per Arteta)",
+   "source": "grok/x"
+  },
+  "Kepa": {
+   "start_prob": 1.0,
+   "reason": "Nailed-on starter, returns in goal vs Man City",
+   "source": "grok/x"
+  },
+  "Saka": {
+   "start_prob": 0.8,
+   "reason": "Injury return expected, likely starts ahead of Madueke",
+   "source": "grok/x"
+  },
+  "Gyokeres": {
+   "start_prob": 1.0,
+   "reason": "Nailed, scored in UCL, key performer",
+   "source": "grok/x"
+  },
+  "Fofana": {
+   "start_prob": 0.5,
+   "reason": "Recent thigh injury issues, rotation risk",
+   "source": "grok/x"
+  },
+  "Yoro": {
+   "start_prob": 1.0,
+   "reason": "Red card overturned, available and nailed",
+   "source": "grok/x"
+  },
+  "De Bruyne": {
+   "start_prob": 0.8,
+   "reason": "Returned vs Napoli, likely starts",
+   "source": "grok/x"
+  }
+ },
+ "headlines": [
+  {
+   "title": "Arsenal GK crisis",
+   "detail": "Raya and Meslier both out injured; Kepa starts vs Man City. Arteta unsure on Raya timeline."
+  },
+  {
+   "title": "Saka nears Arsenal return",
+   "detail": "Expected back from injury; starts ahead of Madueke per reports."
+  },
+  {
+   "title": "Yoro available for Man Utd",
+   "detail": "Red card vs Liverpool overturned on appeal; starts vs Brentford."
+  },
+  {
+   "title": "De Bruyne back for City",
+   "detail": "Featured vs Napoli; set for PL return amid defensive issues."
+  },
+  {
+   "title": "Gyokeres shines for Arsenal",
+   "detail": "Scored stunner in UCL draw vs Dortmund; nailed starter."
+  },
+  {
+   "title": "Fofana thigh concerns",
+   "detail": "Post-ACL thigh problems nearly made him quit; rotation risk under Maresca."
+  }
+ ]
+}
