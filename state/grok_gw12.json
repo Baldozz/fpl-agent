@@ -1,67 +1,70 @@
 {
  "gw": 12,
- "fetched": 1795561688.338015,
+ "fetched": 1795606696.8677351,
  "signals": {
-  "Raya": {
+  "Gravenberch": {
+   "start_prob": 0.2,
+   "reason": "Injured (recent concern, out vs Brugge)",
+   "source": "grok/x"
+  },
+  "Gakpo": {
    "start_prob": 0.0,
-   "reason": "Injury (unknown severity, out next few weeks per Arteta)",
+   "reason": "Injured (out for Liverpool CL)",
    "source": "grok/x"
   },
-  "Kepa": {
+  "Bradley": {
+   "start_prob": 0.0,
+   "reason": "Injured (Liverpool latest)",
+   "source": "grok/x"
+  },
+  "Lacroix": {
+   "start_prob": 0.3,
+   "reason": "Hamstring, targeting early return (pre-Jan)",
+   "source": "grok/x"
+  },
+  "Meghoma": {
+   "start_prob": 0.0,
+   "reason": "Serious injury (Brentford talent, blow for Pompey link)",
+   "source": "grok/x"
+  },
+  "Bruno": {
    "start_prob": 1.0,
-   "reason": "Nailed-on starter, returns in goal vs Man City",
-   "source": "grok/x"
-  },
-  "Saka": {
-   "start_prob": 0.8,
-   "reason": "Injury return expected, likely starts ahead of Madueke",
-   "source": "grok/x"
-  },
-  "Gyokeres": {
-   "start_prob": 1.0,
-   "reason": "Nailed, scored in UCL, key performer",
-   "source": "grok/x"
-  },
-  "Fofana": {
-   "start_prob": 0.5,
-   "reason": "Recent thigh injury issues, rotation risk",
-   "source": "grok/x"
-  },
-  "Yoro": {
-   "start_prob": 1.0,
-   "reason": "Red card overturned, available and nailed",
-   "source": "grok/x"
-  },
-  "De Bruyne": {
-   "start_prob": 0.8,
-   "reason": "Returned vs Napoli, likely starts",
+   "reason": "Returns vs former club Sporting (nailed MU starter)",
    "source": "grok/x"
   }
  },
  "headlines": [
   {
-   "title": "Arsenal GK crisis",
-   "detail": "Raya and Meslier both out injured; Kepa starts vs Man City. Arteta unsure on Raya timeline."
+   "title": "Liverpool hit by multiple injuries",
+   "detail": "Gravenberch, Gakpo, Bradley + others ruled out ahead of GW12"
   },
   {
-   "title": "Saka nears Arsenal return",
-   "detail": "Expected back from injury; starts ahead of Madueke per reports."
+   "title": "Chelsea's Lacroix eyes early comeback",
+   "detail": "Hamstring victim could return before new year, not for GW12"
   },
   {
-   "title": "Yoro available for Man Utd",
-   "detail": "Red card vs Liverpool overturned on appeal; starts vs Brentford."
+   "title": "Brentford lose Meghoma long-term",
+   "detail": "Talented defender suffers serious injury setback"
   },
   {
-   "title": "De Bruyne back for City",
-   "detail": "Featured vs Napoli; set for PL return amid defensive issues."
+   "title": "Man Utd's Bruno back in form",
+   "detail": "Fernandes returns from any rest, nailed for GW12"
   },
   {
-   "title": "Gyokeres shines for Arsenal",
-   "detail": "Scored stunner in UCL draw vs Dortmund; nailed starter."
+   "title": "Arsenal quiet on injuries",
+   "detail": "No major new reports in last 4 days for Arteta's side"
   },
   {
-   "title": "Fofana thigh concerns",
-   "detail": "Post-ACL thigh problems nearly made him quit; rotation risk under Maresca."
+   "title": "Newcastle rotation risk high",
+   "detail": "Post-CL travel could see heavy changes vs lower sides"
+  },
+  {
+   "title": "Spurs monitor key attackers",
+   "detail": "No fresh absences but rotation likely after European games"
+  },
+  {
+   "title": "City without key squad depth",
+   "detail": "Pep's side managing absences amid tough schedule"
   }
  ]
 }
