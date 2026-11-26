@@ -1,70 +1,155 @@
 {
  "gw": 12,
- "fetched": 1795606696.8677351,
+ "fetched": 1795674400.407074,
  "signals": {
-  "Gravenberch": {
-   "start_prob": 0.2,
-   "reason": "Injured (recent concern, out vs Brugge)",
-   "source": "grok/x"
-  },
-  "Gakpo": {
+  "Saliba": {
    "start_prob": 0.0,
-   "reason": "Injured (out for Liverpool CL)",
+   "reason": "Long-term injury, out for weeks",
    "source": "grok/x"
   },
-  "Bradley": {
-   "start_prob": 0.0,
-   "reason": "Injured (Liverpool latest)",
-   "source": "grok/x"
-  },
-  "Lacroix": {
+  "Timber": {
    "start_prob": 0.3,
-   "reason": "Hamstring, targeting early return (pre-Jan)",
+   "reason": "Knee issue, major doubt per club update",
    "source": "grok/x"
   },
-  "Meghoma": {
-   "start_prob": 0.0,
-   "reason": "Serious injury (Brentford talent, blow for Pompey link)",
+  "Rice": {
+   "start_prob": 0.8,
+   "reason": "Back from international duty, likely starts",
    "source": "grok/x"
   },
-  "Bruno": {
+  "Saka": {
    "start_prob": 1.0,
-   "reason": "Returns vs former club Sporting (nailed MU starter)",
+   "reason": "Nailed-on starter, no concerns",
+   "source": "grok/x"
+  },
+  "Odegaard": {
+   "start_prob": 0.9,
+   "reason": "Returned from Norway, expected to start",
+   "source": "grok/x"
+  },
+  "Watkins": {
+   "start_prob": 0.7,
+   "reason": "Rotation risk post-Euro qualifier travel",
+   "source": "grok/x"
+  },
+  "Rogers": {
+   "start_prob": 0.8,
+   "reason": "Newly nailed in Villa XI, strong recent form",
+   "source": "grok/x"
+  },
+  "Semenyo": {
+   "start_prob": 0.5,
+   "reason": "50/50 rotation after Bournemouth midweek",
+   "source": "grok/x"
+  },
+  "Mbeumo": {
+   "start_prob": 1.0,
+   "reason": "Fully fit and nailed for Brentford",
+   "source": "grok/x"
+  },
+  "Toney": {
+   "start_prob": 0.6,
+   "reason": "Rotation risk in busy schedule",
+   "source": "grok/x"
+  },
+  "Mitoma": {
+   "start_prob": 0.9,
+   "reason": "Back from Japan duty, high chance to start",
+   "source": "grok/x"
+  },
+  "Palmer": {
+   "start_prob": 1.0,
+   "reason": "Nailed Chelsea attacker despite Kant\u00e9 UCL return",
+   "source": "grok/x"
+  },
+  "Jackson": {
+   "start_prob": 0.8,
+   "reason": "Likely starter, minor fatigue risk",
+   "source": "grok/x"
+  },
+  "Mateta": {
+   "start_prob": 0.7,
+   "reason": "Palace main striker, consistent",
+   "source": "grok/x"
+  },
+  "Calvert-Lewin": {
+   "start_prob": 0.4,
+   "reason": "Doubtful with hamstring, Everton update",
+   "source": "grok/x"
+  },
+  "Iwobi": {
+   "start_prob": 0.9,
+   "reason": "Nailed Fulham creator",
+   "source": "grok/x"
+  },
+  "Salah": {
+   "start_prob": 1.0,
+   "reason": "Nailed Liverpool star, no issues",
+   "source": "grok/x"
+  },
+  "Haaland": {
+   "start_prob": 1.0,
+   "reason": "Fully nailed for Man City",
+   "source": "grok/x"
+  },
+  "Foden": {
+   "start_prob": 0.8,
+   "reason": "Likely after international return",
+   "source": "grok/x"
+  },
+  "Bruno Fernandes": {
+   "start_prob": 0.9,
+   "reason": "Nailed Utd captain, Poch press comments positive",
+   "source": "grok/x"
+  },
+  "Isak": {
+   "start_prob": 0.8,
+   "reason": "Newcastle key man, minor rotation risk",
+   "source": "grok/x"
+  },
+  "Wood": {
+   "start_prob": 0.7,
+   "reason": "Forest striker, nailed in recent XI",
+   "source": "grok/x"
+  },
+  "Son": {
+   "start_prob": 1.0,
+   "reason": "Nailed Spurs attacker",
    "source": "grok/x"
   }
  },
  "headlines": [
   {
-   "title": "Liverpool hit by multiple injuries",
-   "detail": "Gravenberch, Gakpo, Bradley + others ruled out ahead of GW12"
+   "title": "Arsenal internationals return",
+   "detail": "Rice, Odegaard, Saka all back and expected for GW12."
   },
   {
-   "title": "Chelsea's Lacroix eyes early comeback",
-   "detail": "Hamstring victim could return before new year, not for GW12"
+   "title": "Chelsea Kant\u00e9 UCL return",
+   "detail": "Ex-Blue played midweek for Fenerbahce; no impact on Palmer/Jackson."
   },
   {
-   "title": "Brentford lose Meghoma long-term",
-   "detail": "Talented defender suffers serious injury setback"
+   "title": "Man Utd Poch defends keeper",
+   "detail": "Positive presser on squad unity post-Sporting; Bruno nailed."
   },
   {
-   "title": "Man Utd's Bruno back in form",
-   "detail": "Fernandes returns from any rest, nailed for GW12"
+   "title": "Villa/Everton rotation risks",
+   "detail": "Watkins, Calvert-Lewin face fatigue/doubt after travel."
   },
   {
-   "title": "Arsenal quiet on injuries",
-   "detail": "No major new reports in last 4 days for Arteta's side"
+   "title": "Liverpool, City stars nailed",
+   "detail": "Salah, Haaland fully fit ahead of GW12 fixtures."
   },
   {
-   "title": "Newcastle rotation risk high",
-   "detail": "Post-CL travel could see heavy changes vs lower sides"
+   "title": "Brighton Mitoma back",
+   "detail": "Japan duty done; high start prob for Mitoma."
   },
   {
-   "title": "Spurs monitor key attackers",
-   "detail": "No fresh absences but rotation likely after European games"
+   "title": "Newly nailed: Rogers, Iwobi",
+   "detail": "Consistent recent starts boost FPL value."
   },
   {
-   "title": "City without key squad depth",
-   "detail": "Pep's side managing absences amid tough schedule"
+   "title": "No major new injuries reported",
+   "detail": "Last 4 days show mostly returns from int'l break."
   }
  ]
 }
