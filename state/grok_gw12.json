@@ -1,140 +1,82 @@
 {
  "gw": 12,
- "fetched": 1795759630.0867069,
+ "fetched": 1795774129.109733,
  "signals": {
+  "Saka": {
+   "start_prob": 0.0,
+   "reason": "Out with injury (recent Arsenal draw comments)",
+   "source": "grok/x"
+  },
   "Raya": {
-   "start_prob": 0.5,
-   "reason": "Shoulder injury vs Newcastle; race against time for City, late decision expected",
-   "source": "grok/x"
-  },
-  "Kepa": {
-   "start_prob": 0.5,
-   "reason": "On standby if Raya misses Man City clash",
-   "source": "grok/x"
-  },
-  "Amad": {
    "start_prob": 0.3,
-   "reason": "Injury update pending for Brentford; MUFC concern",
+   "reason": "Injury doubt (Arsenal recent games)",
    "source": "grok/x"
   },
-  "Rashford": {
-   "start_prob": 0.7,
-   "reason": "Injury update vs Brentford; possible rotation risk",
+  "Zubimendi": {
+   "start_prob": 0.4,
+   "reason": "Injury issue affecting Arsenal",
    "source": "grok/x"
   },
-  "Baleba": {
+  "Reaves": {
    "start_prob": 0.6,
-   "reason": "Injury status for Brentford game",
+   "reason": "Questionable with heel bruise (Spurs-related post)",
    "source": "grok/x"
   },
-  "Azeez": {
+  "Palmer": {
    "start_prob": 0.8,
-   "reason": "Returned from injury, debuted for Brighton in Europe",
+   "reason": "Injury crisis at Chelsea but key player expected",
    "source": "grok/x"
   },
-  "Kudus": {
-   "start_prob": 0.9,
-   "reason": "Hold as nailed for Spurs per FPL summary",
-   "source": "grok/x"
-  },
-  "Van Hecke": {
-   "start_prob": 0.9,
-   "reason": "Priority buy; likely nailed Brighton starter",
-   "source": "grok/x"
-  },
-  "Kostoulas": {
-   "start_prob": 0.8,
-   "reason": "Likely to start for Brighton",
-   "source": "grok/x"
-  },
-  "Gvardiol": {
-   "start_prob": 0.5,
-   "reason": "Priority sell for City; rotation risk",
+  "Salah": {
+   "start_prob": 1.0,
+   "reason": "Nailed-on starter for Liverpool",
    "source": "grok/x"
   },
   "Haaland": {
    "start_prob": 1.0,
-   "reason": "Nailed-on starter despite rotation talk",
+   "reason": "Nailed-on for Man City",
    "source": "grok/x"
   },
-  "Calvert-Lewin": {
-   "start_prob": 0.8,
-   "reason": "High ceiling for Leeds/Everton assets",
-   "source": "grok/x"
-  },
-  "Muharemovic": {
+  "Son": {
    "start_prob": 0.9,
-   "reason": "Buy as nailed Leeds defender",
-   "source": "grok/x"
-  },
-  "Okafor": {
-   "start_prob": 0.7,
-   "reason": "Differential for Leeds",
+   "reason": "Likely starter for Spurs",
    "source": "grok/x"
   },
   "Isak": {
+   "start_prob": 0.85,
+   "reason": "Likely for Newcastle",
+   "source": "grok/x"
+  },
+  "Wood": {
    "start_prob": 0.9,
-   "reason": "Priority buy for Liverpool",
-   "source": "grok/x"
-  },
-  "Wirtz": {
-   "start_prob": 0.8,
-   "reason": "Buy as Liverpool differential",
-   "source": "grok/x"
-  },
-  "Jackson": {
-   "start_prob": 0.8,
-   "reason": "Strong fixtures for Villa",
-   "source": "grok/x"
-  },
-  "Manzambi": {
-   "start_prob": 0.7,
-   "reason": "Hold for Villa",
-   "source": "grok/x"
-  },
-  "Gross": {
-   "start_prob": 0.8,
-   "reason": "Buy for Brighton",
-   "source": "grok/x"
-  },
-  "Vuskovic": {
-   "start_prob": 0.7,
-   "reason": "Set-piece differential for Brighton",
+   "reason": "Nailed-on forward for Nott'm Forest",
    "source": "grok/x"
   }
  },
  "headlines": [
   {
-   "title": "Raya race vs time for City",
-   "detail": "Shoulder injury; late fitness test, Kepa ready if needed. Arsenal defence weakened without him."
+   "title": "Arsenal hit by injuries ahead of big clash",
+   "detail": "No Saka, Raya & Zubimendi doubts impacting recent form. [post:11]"
   },
   {
-   "title": "Azeez returns for Brighton",
-   "detail": "Injury comeback complete with debut in Europe; potential PL involvement soon."
+   "title": "Chelsea injury crisis continues",
+   "detail": "Board backs manager despite absences; Palmer key. [post:15]"
   },
   {
-   "title": "MUFC injury trio update",
-   "detail": "Amad, Rashford, Baleba status for Brentford; rotation possible post-Europe."
+   "title": "Spurs monitor Reaves fitness",
+   "detail": "Heel bruise questionable after missing games but trained. [post:12]"
   },
   {
-   "title": "Chelsea midfield boost",
-   "detail": "One key return vs Forest but Alonso still missing duo; Xabi era rotation risks."
+   "title": "Nott'm Forest vs Chelsea preview",
+   "detail": "Key match at City Ground with team news imminent. [post:5]"
   },
   {
-   "title": "City rotation watch",
-   "detail": "Gvardiol high sell priority; Haaland remains nailed despite heavy fixture load."
+   "title": "Bournemouth rotation pays off in Europe",
+   "detail": "Heavy changes but win vs Celta Vigo despite red card. [post:1]"
   },
   {
-   "title": "Brighton starters likely",
-   "detail": "Kostoulas set to start, Van Hecke & Gross recommended; Vuskovic set-piece threat."
-  },
-  {
-   "title": "Spurs Kudus hold",
-   "detail": "Nailed performer; priority targets elsewhere in attack."
-  },
-  {
-   "title": "Liverpool buys",
-   "detail": "Isak & Wirtz high priority; solid defence options available."
+   "title": "Arsenal tifo planned for Man City game",
+   "detail": "Fan-led display to inspire rather than target rivals. [post:6]"
   }
  ]
 }
